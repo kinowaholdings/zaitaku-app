@@ -1,0 +1,2819 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>在宅訪問薬剤管理システム</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#25b7c0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="個人在宅">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7fafb;
+    --panel: #ffffff;
+    --ink: #223b40;
+    --ink-soft: #6b8085;
+    --line: #e3edef;
+    --primary: #25b7c0;
+    --primary-dark: #1a9aa2;
+    --accent: #25b7c0;
+    --danger: #f0616d;
+    --warn: #f5a623;
+    --safe: #14b8a6;
+    --grad-primary: #25b7c0;
+    --grad-header: #25b7c0;
+    --grad-soft: #f7fafb;
+    --glass: #ffffff;
+    --glass-border: #e6ecee;
+    --shadow: none;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  input, button, select, textarea { font-family: inherit; }
+  .ic { display: inline-block; }
+  body {
+    font-family: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+    background: var(--grad-soft);
+    background-attachment: fixed;
+    color: var(--ink);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  header {
+    background: linear-gradient(120deg, rgba(37,183,192,.86) 0%, rgba(37,183,192,.80) 100%);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    color: #fff;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: none;
+  }
+  header h1 { font-size: 18px; font-weight: 800; letter-spacing: .02em; color: #fff; }
+  header .meta { font-size: 12px; color: rgba(255,255,255,.9); }
+  nav.tabs {
+    display: flex;
+    background: rgba(255,255,255,.7);
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 52px;
+    z-index: 90;
+    overflow-x: auto;
+  }
+  nav.tabs button {
+    flex: 1 0 auto;
+    min-width: 90px;
+    padding: 13px 10px;
+    border: none;
+    background: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all .15s;
+    white-space: nowrap;
+  }
+  nav.tabs button.active { color: var(--primary-dark); border-bottom-color: var(--primary); background: linear-gradient(180deg, rgba(37,183,192,.12), rgba(37,183,192,.10)); }
+  nav.tabs button:hover { background: rgba(37,183,192,.07); }
+  main { padding: 16px; max-width: 1200px; margin: 0 auto; }
+  .view { display: none; }
+  .view.active { display: block; animation: fade .2s; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  /* Summary cards */
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap: 10px; margin-bottom: 18px; }
+  .stat { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px; padding: 14px; box-shadow: var(--shadow); text-align: center; }
+  .stat .num { font-size: 26px; font-weight: 800; line-height: 1.1; color: var(--primary); }
+  .stat .lbl { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+  .stat.danger .num { color: #e0505c; }
+  .stat.warn .num { color: #e0930b; }
+  .stat.safe .num { color: #14a89a; }
+
+  /* Controls */
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+  .controls input[type=search] {
+    flex: 1; min-width: 180px; padding: 10px 14px; border: 1px solid var(--line);
+    border-radius: 12px; font-size: 14px; background: var(--glass);
+  }
+  .controls select { padding: 10px; border: 1px solid var(--line); border-radius: 12px; font-size: 13px; background: var(--glass); }
+
+  /* Patient list */
+  .plist { display: grid; gap: 10px; }
+  .pcard {
+    background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px; padding: 14px 16px;
+    box-shadow: var(--shadow); cursor: pointer; border-left: 5px solid var(--line);
+    transition: transform .12s, box-shadow .12s; display: grid;
+    grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center;
+  }
+  .pcard:hover { border-color: var(--primary); }
+  .pcard.crit { border-left-color: var(--danger); }
+  .pcard.soon { border-left-color: var(--warn); }
+  .pcard.ok { border-left-color: var(--safe); }
+  .pcard .name { font-size: 16px; font-weight: 700; }
+  .pcard .sub { font-size: 12px; color: var(--ink-soft); }
+  .pcard .right { text-align: right; }
+  .badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; color: #fff; }
+  .badge.crit { background: var(--danger); }
+  .badge.soon { background: var(--warn); }
+  .badge.ok { background: var(--safe); }
+  .badge.gray { background: #9aa5b1; }
+  .pcard .days { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+
+  /* Detail modal */
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(31,41,51,.5); z-index: 200; align-items: flex-start; justify-content: center; padding: 20px; overflow-y: auto; }
+  .modal-bg.show { display: flex; }
+  .modal { background: #ffffff; border: 1px solid var(--glass-border); border-radius: 20px; max-width: 640px; width: 100%; box-shadow: 0 8px 30px rgba(0,0,0,.12); overflow: hidden; margin: auto; }
+  .modal-head { background: var(--grad-primary); color: #fff; padding: 18px 20px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .modal-head h2 { font-size: 20px; }
+  .modal-head .fr { font-size: 12px; opacity: .85; }
+  .modal-head .x { background: rgba(255,255,255,.2); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; font-size: 18px; cursor: pointer; flex-shrink: 0; }
+  .modal-body { padding: 18px 20px; }
+  .dsec { margin-bottom: 16px; }
+  .dsec h3 { font-size: 12px; color: var(--primary); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; border-bottom: 1px solid var(--line); padding-bottom: 3px; }
+  .dsec .row { display: flex; gap: 8px; font-size: 13px; margin-bottom: 3px; }
+  .dsec .row .k { color: var(--ink-soft); min-width: 90px; flex-shrink: 0; }
+  .dsec .row .v { flex: 1; }
+  .note-box { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 12px; font-size: 13px; white-space: pre-wrap; }
+  .packetwrap { display: flex; justify-content: center; margin: 4px 0 8px; }
+  .toggles { display: flex; flex-wrap: wrap; gap: 6px; }
+  .toggles .tg { padding: 6px 12px; border-radius: 20px; border: 1.5px solid var(--line); background: var(--panel); font-size: 12px; font-weight: 600; color: var(--ink-soft); cursor: pointer; }
+  .toggles .tg.on { background: var(--grad-primary); border-color: transparent; color: #fff; }
+  .colorpick { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .colorpick .cplabel { font-size: 12px; color: var(--ink-soft); font-weight: 600; }
+  .swatch { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1.5px var(--line); cursor: pointer; padding: 0; flex-shrink: 0; }
+  .swatch.on { box-shadow: 0 0 0 2.5px var(--primary); transform: scale(1.12); }
+  .textedit { margin-top: 12px; display: grid; gap: 6px; }
+  .textedit .terow { display: flex; align-items: center; gap: 8px; }
+  .textedit .terow label { font-size: 12px; color: var(--ink-soft); min-width: 80px; flex-shrink: 0; }
+  .textedit .terow input { flex: 1; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; }
+  .textedit .tehint { font-size: 12px; color: var(--ink-soft); }
+  /* 用法区分プレビュー */
+  .packets { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-start; }
+  .packetitem { width: 100%; max-width: 260px; }
+  .packetlabel { font-size: 11px; font-weight: 700; color: var(--primary-dark); margin-bottom: 3px; }
+  svg.packet { width: 100%; height: auto; filter: drop-shadow(0 1px 3px rgba(0,0,0,.12)); }
+  .nopacket, .prnote { font-size: 12px; color: var(--ink-soft); padding: 4px 0; }
+  /* 用法区分の選択タグ */
+  .usagepick { display: flex; flex-wrap: wrap; gap: 6px; }
+  .usagepick .utag { padding: 6px 12px; border-radius: 18px; border: 1.5px solid var(--line); background: var(--panel); font-size: 12px; font-weight: 600; color: var(--ink-soft); cursor: pointer; }
+  .usagepick .utag.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .ucard { background: #f8fafb; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin: 8px 0; }
+  .ucard .uchead { font-weight: 700; font-size: 13px; margin-bottom: 6px; }
+  .ucard .ucrow { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+  .ucard .uclabel { font-size: 12px; color: var(--ink-soft); }
+  .ucard .ucswatch { display: flex; gap: 6px; }
+  svg.packet { width: 100%; max-width: 300px; height: auto; filter: drop-shadow(0 1px 3px rgba(0,0,0,.12)); }
+  .rrow svg.packet { max-width: 220px; }
+  .modal-actions { display: flex; gap: 8px; padding: 0 20px 18px; flex-wrap: wrap; }
+  .btn { padding: 10px 18px; border-radius: 999px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  .btn.map { background: var(--grad-primary); color: #fff; }
+  .btn.tel { background: #eef2f5; color: var(--ink); }
+
+  /* Month calendar */
+  .monthbar { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 12px; }
+  .monthbar button { width: 40px; height: 40px; border-radius: 50%; border: none; background: var(--panel); box-shadow: var(--shadow); font-size: 20px; cursor: pointer; color: var(--primary); font-weight: 700; }
+  .monthbar button:hover { background: #e3edef; }
+  #monthTitle { font-size: 18px; font-weight: 800; min-width: 140px; text-align: center; }
+  .legend { display: flex; gap: 16px; justify-content: center; margin-bottom: 12px; font-size: 12px; color: var(--ink-soft); flex-wrap: wrap; }
+  .legend i.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+  .dot.visit { background: var(--primary); }
+  .dot.expire { background: var(--danger); }
+  .dot.rx { background: var(--accent); }
+  /* 凡例トグルボタン（ON=色付きピル／OFF=グレー） */
+  .legend .lgbtn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border: 1.5px solid transparent; border-radius: 20px; background: #eef1f4; color: #9aa5b1; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s; -webkit-appearance: none; appearance: none; }
+  .legend .lgbtn .dot { opacity: .4; }
+  .legend .lgbtn.on { color: var(--ink); }
+  .legend .lgbtn.on .dot { opacity: 1; }
+  .legend .lgbtn[data-t="visit"].on { background: #e3edef; border-color: var(--primary); }
+  .legend .lgbtn[data-t="expire"].on { background: #fdeaea; border-color: var(--danger); }
+  .legend .lgbtn[data-t="rx"].on { background: #e8f6f7; border-color: var(--accent); }
+  .mgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .mgrid .wd { text-align: center; font-size: 12px; font-weight: 700; padding: 6px 0; color: var(--ink-soft); }
+  .mgrid .wd.sun { color: var(--danger); }
+  .mgrid .wd.sat { color: #3b82f6; }
+  .mcell { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 10px; min-height: 92px; padding: 5px; box-shadow: var(--shadow); display: flex; flex-direction: column; overflow: hidden; }
+  .mcell.empty { background: transparent; box-shadow: none; }
+  .mcell.today { outline: 2px solid var(--primary); }
+  .mcell.has { cursor: pointer; }
+  .mcell.has:hover { background: #e8f6f7; }
+  .ddrow { display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .ddrow:hover { background: #e8f6f7; }
+  .ddrow .ddname { font-weight: 600; }
+  .mcell .dnum { font-size: 12px; font-weight: 700; margin-bottom: 3px; }
+  .mcell .dnum.sun { color: var(--danger); }
+  .mcell .dnum.sat { color: #3b82f6; }
+  .mevt { font-size: 10px; line-height: 1.3; padding: 2px 4px; border-radius: 4px; margin-bottom: 2px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mevt.visit { background: #e3edef; color: var(--primary-dark); }
+  .mevt.expire { background: #fde8e8; color: var(--danger); font-weight: 700; }
+  .mevt.rx { background: #e8f7e6; color: #2f7d34; }
+  .mcell .more { font-size: 9px; color: var(--ink-soft); }
+  @media (max-width: 640px) {
+    .mcell { min-height: 64px; }
+    .mevt { font-size: 8px; }
+  }
+
+  /* Route view */
+  .routebar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .routebar .rbtitle { font-size: 14px; font-weight: 700; }
+  .routebar .rbactions { display: flex; gap: 8px; }
+  .selgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 8px; margin-bottom: 18px; }
+  .selsec { grid-column: 1 / -1; font-size: 12px; font-weight: 700; color: var(--ink-soft); margin: 6px 0 2px; padding-top: 4px; }
+  .selitem.fac.sel { border-color: #25b7c0; background: #e8f6f7; }
+  .selitem.fac .check { }
+  .selitem { background: var(--panel); border: 2px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; transition: all .12s; }
+  .selitem.sel { border-color: var(--primary); background: #e8f6f7; }
+  .selitem .sn { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+  .selitem .check { width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--line); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; flex-shrink: 0; }
+  .selitem.sel .check { background: var(--primary); border-color: var(--primary); }
+  .selitem .se { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+  .routecard { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: var(--shadow); margin-bottom: 12px; overflow: hidden; }
+  .routecard .rhead { background: var(--grad-primary); color: #fff; padding: 10px 14px; display: flex; align-items: center; gap: 10px; }
+  .routecard .rhead .seq { background: #fff; color: var(--primary-dark); width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
+  .routecard .rhead .rn { font-weight: 700; font-size: 16px; flex: 1; }
+  .routecard .rhead .rb { font-size: 11px; background: rgba(255,255,255,.25); padding: 2px 8px; border-radius: 10px; }
+  .routecard .rbody { padding: 12px 14px; }
+  .routecard .rrow { display: flex; gap: 8px; font-size: 13px; margin-bottom: 4px; }
+  .routecard .rrow .k { color: var(--ink-soft); min-width: 70px; flex-shrink: 0; }
+  .routecard .rnote { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 8px 10px; font-size: 12px; margin-top: 6px; white-space: pre-wrap; }
+  .routecard .rbtn { margin-top: 8px; }
+  .routetop { background: #e3edef; border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; font-size: 13px; }
+  .routetop .rt-title { font-weight: 700; margin-bottom: 6px; }
+  .routetop a { color: var(--primary-dark); font-weight: 600; }
+
+  /* Record view */
+  .vhint { font-size: 12px; color: var(--ink-soft); margin-bottom: 12px; background: #e3edef; padding: 8px 12px; border-radius: 8px; }
+  .vsec { border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .vseclabel { font-size: 12px; font-weight: 700; color: var(--primary-dark); margin-bottom: 8px; }
+  .recbar { margin-bottom: 14px; }
+  .recbar select { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; background: var(--panel); }
+  .reccard { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: var(--shadow); padding: 16px; margin-bottom: 14px; }
+  .rectitle { font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 10px; }
+  .recgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 10px; margin-bottom: 10px; }
+  .recf { margin-bottom: 8px; }
+  .recf label { display: block; font-size: 12px; color: var(--ink-soft); font-weight: 600; margin-bottom: 3px; }
+  .recf input, .recf textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; font-family: inherit; }
+  .recf textarea { min-height: 60px; resize: vertical; }
+  .rectoggle { margin: 6px 0; }
+  .recitem { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 12px; box-shadow: var(--shadow); padding: 12px 14px; margin-bottom: 8px; }
+  .recdate { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .recbp { font-size: 13px; color: var(--ink-soft); margin-top: 4px; }
+  .reccm { font-size: 13px; margin-top: 4px; background: #fffbeb; border-radius: 6px; padding: 6px 8px; }
+  /* Adherence view */
+  .adhint { font-size: 12px; color: var(--ink-soft); margin-bottom: 14px; background: #e3edef; padding: 8px 12px; border-radius: 8px; }
+  .adhcard { background: var(--panel); border-radius: 12px; box-shadow: var(--shadow); padding: 14px 16px; margin-bottom: 10px; cursor: pointer; border-left: 5px solid var(--safe); }
+  .adhcard.warn { border-left-color: var(--danger); }
+  .adhhead { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .adhname { font-weight: 700; font-size: 15px; }
+  .sparkwrap { display: flex; align-items: flex-end; gap: 4px; height: 32px; margin: 10px 0 6px; }
+  .spark { width: 16px; background: var(--primary); border-radius: 3px 3px 0 0; display: inline-block; }
+  .adhsub { font-size: 12px; color: var(--ink-soft); }
+  .adhcm { font-size: 12px; margin-top: 6px; background: #fffbeb; border-radius: 6px; padding: 6px 8px; }
+
+  /* Rx update view */
+  .recf input.calc { background: #e8f6f7; color: var(--primary-dark); font-weight: 600; }
+  .rqbtn { font-size: 10px; font-weight: 700; color: var(--primary-dark); background: #e8f6f7; border: 1px solid var(--line); border-radius: 12px; padding: 2px 9px; margin-left: 6px; cursor: pointer; vertical-align: middle; }
+  .rqbtn:hover { background: #e9ddf7; }
+  .paypick { display: flex; gap: 8px; flex-wrap: wrap; }
+  .paypick .paybtn { padding: 9px 16px; border-radius: 20px; border: 1.5px solid var(--line); background: var(--panel); font-size: 13px; font-weight: 600; color: var(--ink-soft); cursor: pointer; transition: all .15s; }
+  .paypick .paybtn:hover { border-color: var(--primary); }
+  .paypick .paybtn.on { background: var(--grad-primary); border-color: transparent; color: #fff; }
+  .paypick .paybtn[data-s="未収"].on { background: var(--danger); border-color: var(--danger); }
+
+  /* Billing view */
+  .bilhint { font-size: 12px; color: var(--ink-soft); margin-bottom: 10px; background: #e3edef; padding: 8px 12px; border-radius: 8px; }
+  .bilfilter { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .bilfilter button { padding: 5px 12px; border-radius: 16px; border: 1.5px solid var(--line); background: var(--panel); font-size: 12px; cursor: pointer; }
+  .bilfilter button.active { background: var(--grad-primary); border-color: transparent; color: #fff; }
+  .bilcard { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: var(--shadow); padding: 14px 16px; margin-bottom: 10px; }
+  .bilhead { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .bilname { font-weight: 700; font-size: 15px; }
+  .bilgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 10px; }
+  .bilf label { display: block; font-size: 11px; color: var(--ink-soft); margin-bottom: 3px; }
+  .bilf input, .bilf select, .bilf textarea { width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; font-size: 13px; font-family: inherit; }
+  .bilf textarea { resize: vertical; min-height: 36px; line-height: 1.5; white-space: pre-wrap; }
+  .bilf-wide { grid-column: 1 / -1; }
+
+  /* Edit view */
+  .editbar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .editbar select { flex: 1; min-width: 180px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; background: var(--panel); }
+  .efcard { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: var(--shadow); padding: 16px; margin-bottom: 14px; }
+  .efcard h3 { font-size: 12px; color: var(--primary); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+  .effield { margin-bottom: 10px; }
+  .effield label { display: block; font-size: 12px; color: var(--ink-soft); font-weight: 600; margin-bottom: 3px; }
+  .effield input, .effield select, .effield textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; font-family: inherit; }
+  .effield textarea { min-height: 70px; resize: vertical; }
+  .efgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .daypick { display: flex; gap: 6px; flex-wrap: wrap; }
+  .daybtn { width: 42px; height: 42px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--panel); font-size: 15px; font-weight: 700; color: var(--ink-soft); cursor: pointer; }
+  .daybtn.on { background: var(--grad-primary); border-color: transparent; color: #fff; }
+  .efpreview { display: flex; justify-content: center; margin: 6px 0 12px; }
+  .efsave { position: sticky; bottom: 0; background: var(--bg); padding: 12px 0; display: flex; gap: 8px; }
+  .efsave .btn { flex: 1; justify-content: center; }
+  .btn.del { background: #fde8e8; color: var(--danger); }
+  .savemsg { text-align: center; color: var(--safe); font-weight: 600; font-size: 13px; padding: 6px; }
+  @media (max-width: 640px) { .efgrid { grid-template-columns: 1fr; } }
+  .mapfilter button { padding: 8px 16px; border: 1px solid var(--line); border-radius: 20px; background: var(--panel); font-size: 13px; font-weight: 600; color: var(--ink-soft); cursor: pointer; }
+  .mapfilter button.active { background: var(--grad-primary); color: #fff; border-color: transparent; }
+  .maplist { display: grid; gap: 8px; }
+  .areagroup { margin-bottom: 6px; }
+  .arealabel { font-size: 13px; font-weight: 700; color: var(--primary-dark); padding: 6px 2px; }
+  .maprow { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 12px; padding: 12px 14px; box-shadow: var(--shadow); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .maprow .info { flex: 1; min-width: 0; }
+  .maprow .info .n { font-weight: 700; font-size: 14px; }
+  .maprow .info .n .wd { font-size: 11px; font-weight: 600; color: var(--primary-dark); background: #e3edef; padding: 1px 7px; border-radius: 10px; margin-left: 6px; }
+  .maprow .info .a { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .maprow .info .p { font-size: 11px; color: var(--primary-dark); margin-top: 2px; }
+  .maprow .acts { display: flex; gap: 6px; flex-shrink: 0; }
+
+  footer { text-align: center; font-size: 11px; color: var(--ink-soft); padding: 24px; }
+  @media (max-width: 640px) {
+    nav.tabs { top: 50px; }
+  }
+  .facbox { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: var(--shadow); padding: 14px 16px; margin-bottom: 14px; }
+  .facbox-h { font-size: 13px; font-weight: 700; color: var(--primary-dark); margin-bottom: 10px; }
+  .facadd { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .facadd input, .facadd select { flex: 1; min-width: 140px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; background: var(--panel); color: var(--ink); -webkit-appearance: none; appearance: none; }
+  .facadd select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2352606d' d='M1 1l5 5 5-5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px; }
+  .facadd input[type=time] { flex: 0 0 auto; min-width: 0; }
+  .facrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  .facrow .fi { font-size: 13px; }
+  .facrow .fi b { color: var(--primary-dark); }
+  .facrow .fa { font-size: 11px; color: var(--ink-soft); }
+  .facrow .fdel { background: #fde8e8; color: var(--danger); border: none; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+  .facrow .facbtns { display: flex; gap: 6px; flex-shrink: 0; }
+  .facrow .fedit { background: #e3edef; color: var(--primary-dark); border: none; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; font-weight: 600; }
+  .repbtn { background: var(--grad-primary); color: #fff; border: none; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .repbtn:hover { background: var(--primary-dark); }
+
+  /* ===== 認証・店舗 オーバーレイ ===== */
+  .auth-overlay { position: fixed; inset: 0; z-index: 9000; background: var(--grad-soft); display: flex; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+  .auth-card { background: #fff; border-radius: 16px; border: 1px solid var(--glass-border); box-shadow: none; padding: 32px 28px; width: 100%; max-width: 400px; }
+  .auth-card .logo { text-align: center; margin-bottom: 6px; font-size: 26px; }
+  .auth-card h2 { text-align: center; font-size: 19px; font-weight: 800; margin-bottom: 4px; color: var(--primary); }
+  .auth-card .sub { text-align: center; font-size: 12px; color: var(--ink-soft); margin-bottom: 22px; }
+  .auth-card label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-soft); margin: 12px 0 4px; }
+  .auth-card input { width: 100%; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; }
+  .auth-card .authbtn { width: 100%; margin-top: 20px; padding: 13px; border: none; border-radius: 999px; background: var(--grad-primary); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .auth-card .err { color: var(--danger); font-size: 12px; margin-top: 10px; text-align: center; min-height: 16px; }
+  .auth-card .hint { font-size: 11px; color: var(--ink-soft); margin-top: 16px; text-align: center; line-height: 1.5; }
+  .store-grid { display: grid; gap: 10px; margin-top: 8px; }
+  .store-pick { display: flex; align-items: center; justify-content: space-between; padding: 15px 18px; border: 1.5px solid var(--line); border-radius: 14px; background: #fff; cursor: pointer; transition: all .12s; }
+  .store-pick:hover { border-color: var(--primary); }
+  .store-pick .snm { font-weight: 700; font-size: 15px; color: var(--ink); }
+  .store-pick .scnt { font-size: 11px; color: var(--ink-soft); }
+  .store-pick .sarrow { color: var(--primary); font-size: 18px; }
+  .auth-foot { display: flex; justify-content: space-between; margin-top: 18px; font-size: 12px; }
+  .auth-foot a { color: var(--primary-dark); cursor: pointer; text-decoration: underline; }
+  /* ヘッダーのユーザー・店舗表示 */
+  header .hdr-user { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+  header .hdr-user .chip { background: rgba(255,255,255,.22); padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+  header .hdr-user button { background: rgba(255,255,255,.9); color: var(--primary-dark); border: none; border-radius: 8px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer; }
+  /* 店舗マスタ画面 */
+  .admin-sec { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: var(--shadow); padding: 18px; margin-bottom: 16px; }
+  .admin-sec h3 { font-size: 15px; font-weight: 800; color: var(--primary-dark); margin-bottom: 12px; }
+  .admin-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; background: #fff; }
+  .admin-row .info b { font-size: 14px; }
+  .admin-row .info .meta { font-size: 11px; color: var(--ink-soft); }
+  .admin-row .delbtn { background: #fde8e8; color: var(--danger); border: none; border-radius: 8px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
+  .admin-form { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit,minmax(140px,1fr)); align-items: end; margin-top: 10px; }
+  .admin-form label { font-size: 11px; color: var(--ink-soft); display: block; margin-bottom: 3px; }
+  .admin-form input, .admin-form select { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; }
+  .admin-form .addbtn { background: var(--grad-primary); color: #fff; border: none; border-radius: 999px; padding: 9px 16px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .badge-role { font-size: 10px; padding: 2px 8px; border-radius: 10px; margin-left: 6px; }
+  .badge-role.admin { background: #fde8f3; color: #be185d; }
+  .badge-role.staff { background: #ede9fe; color: #6d28d9; }
+
+  .facrow .fedit:hover { background: #d0f0ee; }
+  .facrow.editing { background: #e8f6f7; border-radius: 8px; }
+  .facadd .btn.cancel { background: #eef1f4; color: var(--ink-soft); }
+  .leafmap { width:100%; height:340px; border-radius:12px; margin-bottom:14px; }
+</style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+</head>
+<body>
+<!-- ログイン画面 -->
+<div class="auth-overlay" id="loginScreen">
+  <div class="auth-card">
+    <div class="logo"><svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="#25b7c0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></div>
+    <h2>在宅訪問薬剤管理</h2>
+    <div class="sub">ログインしてください</div>
+    <label>メールアドレス</label>
+    <input type="email" id="login-id" placeholder="例 kurinoki@kinowa.local" autocomplete="username">
+    <label>パスワード</label>
+    <div style="position:relative;">
+      <input type="password" id="login-pw" placeholder="パスワード" autocomplete="current-password" style="width:100%;padding-right:44px;box-sizing:border-box;">
+      <button type="button" id="pw-toggle" aria-label="パスワード表示切替"
+        style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:transparent;cursor:pointer;font-size:18px;line-height:1;padding:4px;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+    </div>
+    <button class="authbtn" id="loginBtn">ログイン</button>
+    <div class="err" id="login-err"></div>
+    <div class="hint">メールアドレスとパスワードは管理者から共有されます。</div>
+  </div>
+</div>
+
+<!-- 店舗選択画面 -->
+<div class="auth-overlay" id="storeScreen" style="display:none">
+  <div class="auth-card">
+    <div class="logo"><svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="#25b7c0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16l-1-5H5L4 9z"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg></div>
+    <h2>店舗を選択</h2>
+    <div class="sub" id="store-sub">担当する店舗を選んでください</div>
+    <div class="store-grid" id="storeGrid"></div>
+    <div class="auth-foot"><a id="logoutFromStore">ログアウト</a><span></span></div>
+  </div>
+</div>
+
+<header>
+  <h1>在宅訪問薬剤管理</h1>
+  <span id="cloudStatus" style="font-size:11px;color:#fff;opacity:.85;margin-left:auto;"></span>
+  <button id="refreshBtn" title="クラウドから最新データを取得" style="background:rgba(255,255,255,.9);color:var(--primary-dark);border:none;border-radius:8px;padding:5px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">⟳ 更新</button>
+  <div class="hdr-user" id="hdrUser"></div>
+</header>
+
+<nav class="tabs">
+  <button class="active" data-view="list">患者一覧</button>
+  <button data-view="month">月次カレンダー</button>
+  <button data-view="route">訪問ルート</button>
+  <button data-view="map">訪問先マップ</button>
+  <button data-view="visit">訪問入力</button>
+  <button data-view="billing">患者ステータス</button>
+  <button data-view="edit">患者編集</button>
+  <button data-view="pharmacists" id="pharmTab">薬剤師登録</button>
+  <button data-view="admin" id="adminTab" style="display:none">店舗マスタ</button>
+</nav>
+
+<main>
+  <!-- 患者一覧 -->
+  <section class="view active" id="view-list">
+    <div class="summary" id="summary"></div>
+    <div class="controls">
+      <input type="search" id="search" placeholder="患者名・医療機関で検索…">
+      <select id="statusFilter">
+        <option value="all">全ステータス</option>
+        <option value="対応中">対応中</option>
+        <option value="入院中">入院中</option>
+        <option value="ショート中">ショート中</option>
+        <option value="契約終了">契約終了</option>
+      </select>
+      <select id="sortBy">
+        <option value="days">切れ日が近い順</option>
+        <option value="name">名前順</option>
+        <option value="day">訪問曜日順</option>
+      </select>
+    </div>
+    <div class="plist" id="plist"></div>
+  </section>
+
+  <!-- 月次カレンダー -->
+  <section class="view" id="view-month">
+    <div class="monthbar">
+      <button id="prevMonth">‹</button>
+      <div id="monthTitle"></div>
+      <button id="nextMonth">›</button>
+    </div>
+    <div class="legend">
+      <button class="lgbtn on" data-t="visit"><i class="dot visit"></i>訪問予定</button>
+      <button class="lgbtn on" data-t="expire"><i class="dot expire"></i>切れ日</button>
+      <button class="lgbtn on" data-t="rx"><i class="dot rx"></i>処方予定</button>
+    </div>
+    <div class="mgrid" id="mgrid"></div>
+  </section>
+
+  <!-- 訪問ルート -->
+  <section class="view" id="view-route">
+    <div class="routebar">
+      <div class="rbtitle">回る患者を選択 → 距離順ルートとしおりを作成</div>
+      <div class="rbactions">
+        <button class="btn tel" id="clearSel">クリア</button>
+        <button class="btn map" id="buildRoute"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;"><path d="M5 13l1.5-4.5A2 2 0 0 1 8.4 7h7.2a2 2 0 0 1 1.9 1.5L19 13v5h-2v-2H7v2H5z"/><circle cx="7.5" cy="15.5" r="1"/><circle cx="16.5" cy="15.5" r="1"/></svg> ルート作成</button>
+      </div>
+    </div>
+    <div class="selgrid" id="selgrid"></div>
+    <div id="routeResult"></div>
+  
+    <div id="routeMapWrap" style="display:none"><div id="routeMap" class="leafmap"></div></div></section>
+
+  <!-- マップ -->
+  <section class="view" id="view-map">
+    <div class="mapfilter" id="mapfilter"></div>
+    <div id="leafMap" class="leafmap"></div>
+    <div class="facbox">
+      <div class="facbox-h"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></svg> 介護施設</div>
+      <div class="facadd">
+        <input type="text" id="facName" placeholder="施設名（例：雅秀苑）">
+        <input type="text" id="facAddr" placeholder="住所（例：大阪市住之江区南港北1-4-1）">
+      </div>
+      <div class="facadd">
+        <select id="facDay">
+          <option value="">訪問曜日（任意）</option>
+          <option>月</option><option>火</option><option>水</option><option>木</option><option>金</option><option>土</option>
+        </select>
+        <select id="facBand">
+          <option value="">時間帯（任意）</option>
+          <option>AM</option><option>PM</option><option>時間指定</option>
+        </select>
+        <input type="time" id="facFrom" style="display:none">
+        <input type="time" id="facTo" style="display:none">
+        <button class="btn map" id="facAddBtn">＋ 追加</button>
+        <button class="btn cancel" id="facCancelBtn" style="display:none">キャンセル</button>
+      </div>
+      <div id="facList"></div>
+    </div>
+    <div class="maplist" id="maplist"></div>
+  </section>
+
+  <!-- 訪問入力（処方更新＋訪問記録の統合） -->
+  <section class="view" id="view-visit">
+    <div class="recbar">
+      <select id="visitSelect"></select>
+    </div>
+    <div class="vhint">訪問したら、処方情報を更新し当日の記録を入力 →「記録する」で一括保存します。</div>
+    <div class="reccard" id="visitForm"></div>
+    <div id="visitHistory"></div>
+  </section>
+
+  <!-- 患者ステータス -->
+  <section class="view" id="view-billing">
+    <div class="bilbar">
+      <div class="bilhint">患者の状態を一覧管理します。保険種別・月算定回数・報告書送付先・契約状況（入院/ショート/契約終了）をその場で編集できます。</div>
+      <input type="search" id="bilSearch" placeholder="患者名・医療機関で検索…" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:14px;background:var(--panel);margin-bottom:10px;">
+      <div class="bilfilter" id="bilFilter"></div>
+    </div>
+    <div id="bilTable"></div>
+  </section>
+
+  <!-- 患者編集 -->
+  <section class="view" id="view-edit">
+    <div class="editbar">
+      <select id="editSelect"></select>
+      <button class="btn map" id="newPatient">＋ 新規患者</button>
+      <label class="btn map" style="background:#25b7c0; cursor:pointer;">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/></svg> 患者データ取込(JSON)
+        <input type="file" id="importJson" accept="application/json,.json" style="display:none;">
+      </label>
+    </div>
+    <div id="importMsg" style="font-size:13px;margin:6px 0;min-height:18px;"></div>
+    <div id="editForm"></div>
+  </section>
+
+  <!-- 薬剤師登録（店舗ログイン時のみ） -->
+  <section class="view" id="view-pharmacists">
+    <div style="max-width:560px;margin:0 auto;">
+      <div style="background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;padding:18px;box-shadow:var(--shadow);">
+        <h3 style="margin:0 0 4px;color:var(--primary-dark);"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg> 薬剤師登録</h3>
+        <p style="font-size:13px;color:var(--ink-soft);margin:0 0 14px;line-height:1.6;">
+          この店舗の薬剤師を登録します。登録した名前は、訪問入力の「担当薬剤師」欄でプルダウン選択できます。データは店舗ごとに保存され、クラウド同期で共有されます。
+        </p>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="pharm-input" placeholder="例 山田 太郎"
+            style="flex:1;padding:9px;border:1px solid var(--line);border-radius:8px;">
+          <button class="btn map" id="pharm-add" style="background:#25b7c0;">＋ 登録</button>
+        </div>
+        <div id="pharm-msg" style="font-size:12px;margin-top:6px;min-height:16px;"></div>
+        <div id="pharm-list" style="margin-top:12px;display:grid;gap:8px;"></div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- 店舗マスタ（管理者のみ） -->
+  <section class="view" id="view-admin">
+    <div class="admin-sec">
+      <h3><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;"><path d="M4 20V4"/><path d="M4 20h16"/><rect x="7" y="12" width="3" height="5"/><rect x="12" y="8" width="3" height="9"/><rect x="17" y="5" width="3" height="12"/></svg> 店舗別 集計</h3>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <label style="font-size:12px;color:var(--ink-soft)">対象月</label>
+        <select id="statMonth" style="padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;"></select>
+      </div>
+      <div id="statTable" style="overflow-x:auto"></div>
+    </div>
+    <div class="admin-sec">
+      <h3><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;"><path d="M4 9h16l-1-5H5L4 9z"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg> 店舗マスタ</h3>
+      <div id="storeList"></div>
+      <div class="admin-form">
+        <div><label>店舗名</label><input type="text" id="newStoreName" placeholder="例 きのわ薬局 本店"></div>
+        <div><button class="addbtn" id="addStoreBtn">＋ 店舗を追加</button></div>
+      </div>
+      <div style="font-size:11px;color:var(--ink-soft);margin-top:10px;">※ログインIDとパスワードは店舗ごとに付与されます。店舗のスタッフはこのID/PWでログインし、その店舗の業務画面に入ります。店舗追加時はID/PWが自動で仮設定されるので、必要に応じて変更してください。</div>
+    </div>
+    <div class="admin-sec">
+      <h3><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;"><circle cx="8" cy="12" r="4"/><path d="M12 12h9"/><path d="M17 12v4M20 12v3"/></svg> 管理者アカウント</h3>
+      <div id="acctList"></div>
+      <div style="font-size:11px;color:var(--ink-soft);margin-top:10px;">※管理者はこの店舗マスタ画面にログインし、全店舗を管理できます。</div>
+    </div>
+    <div class="admin-sec">
+      <h3><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;"><path d="M6 17a4 4 0 0 1 .5-8 5 5 0 0 1 9.5 1.5A3.5 3.5 0 0 1 18 17z"/></svg> データ同期について</h3>
+      <p style="font-size:12px;color:var(--ink-soft);line-height:1.6;margin:4px 0 8px;">
+        このアプリは <b>Firebase</b> にデータをリアルタイム保存します（編集すると即座に全端末へ反映）。設定はアプリ内（index.html）の firebaseConfig で行います。
+      </p>
+      <div id="fb-status" style="font-size:13px;min-height:18px;"></div>
+      <div style="font-size:11px;color:#c60;margin-top:8px;">※ アカウント（メール／パスワード）の追加・削除・役割設定は、Firebaseコンソールで行います。手順は配布資料「Firebase設定手順」を参照。</div>
+    </div>
+  </section>
+</main>
+
+<!-- 日別予定モーダル -->
+<div class="modal-bg" id="dayModalBg">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head"><div><h2 id="dd-title"></h2></div><button class="x" onclick='document.getElementById("dayModalBg").classList.remove("show")'>×</button></div>
+    <div class="modal-body" id="dd-body"></div>
+  </div>
+</div>
+
+<!-- 詳細モーダル -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h2 id="m-name"></h2>
+        <div class="fr" id="m-furi"></div>
+      </div>
+      <button class="x" id="closeModal">×</button>
+    </div>
+    <div class="modal-body" id="m-body"></div>
+    <div class="modal-actions" id="m-actions"></div>
+  </div>
+</div>
+
+<footer>在宅訪問薬剤管理システム｜データはFirebaseでリアルタイム同期。</footer>
+
+<!-- ▼▼▼ Firebase 設定（管理者がここに firebaseConfig を貼る）▼▼▼ -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, collection, getDocs, deleteDoc, onSnapshot }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  // ★★★ ここに Firebase コンソールで取得した firebaseConfig を貼り付ける ★★★
+  const firebaseConfig = {
+    apiKey: "AIzaSyCrrNJXWyDrFtMKAD9TRIMT91dwkkxKCgo",
+  authDomain: "kinowa-zaitaku.firebaseapp.com",
+  projectId: "kinowa-zaitaku",
+  storageBucket: "kinowa-zaitaku.firebasestorage.app",
+  messagingSenderId: "435615268053",
+  appId: "1:435615268053:web:a61f2cc878f37b1ed6765c"
+};
+  // ★★★ 貼り付けはここまで ★★★
+
+  try {
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    // メインスクリプトから使えるよう公開
+    window.FB = {
+      db, auth,
+      doc, getDoc, setDoc, collection, getDocs, deleteDoc, onSnapshot,
+      signInWithEmailAndPassword, signOut, onAuthStateChanged,
+      ready: !firebaseConfig.apiKey.startsWith("PASTE")
+    };
+    window.dispatchEvent(new Event("firebase-ready"));
+  } catch (e) {
+    console.error("Firebase初期化エラー:", e);
+    window.FB = { ready: false, error: String(e) };
+    window.dispatchEvent(new Event("firebase-ready"));
+  }
+</script>
+<!-- ▲▲▲ Firebase 設定ここまで ▲▲▲ -->
+
+<script>
+// ===== サンプルデータ（初期表示用の1件。実データは取込またはクラウド同期で入る） =====
+// 実運用ではこの配列をスプレッドシート読み込みに差し替える
+const TODAY = new Date(2026, 5, 1); // 2026/6/1
+
+// ===== 統一SVGアイコン（線画・currentColorで周囲の色に追従）=====
+function icon(name, size){
+  size = size || 18;
+  const P = { // 各アイコンのSVGパス（24x24基準・線画）
+    home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
+    building:'<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/>',
+    shop:'<path d="M4 9h16l-1-5H5L4 9z"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/>',
+    map:'<polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21 3 6"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/>',
+    pin:'<path d="M12 21s-6-5.5-6-10a6 6 0 0 1 12 0c0 4.5-6 10-6 10z"/><circle cx="12" cy="11" r="2"/>',
+    user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',
+    note:'<path d="M4 4h12l4 4v12H4z"/><path d="M16 4v4h4"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="14" y2="16"/>',
+    mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+    eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+    eyeoff:'<path d="M4 4l16 16"/><path d="M9.5 5.5A9.8 9.8 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3 3.8M6.3 6.3A17 17 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 3.7-.7"/>',
+    car:'<path d="M5 13l1.5-4.5A2 2 0 0 1 8.4 7h7.2a2 2 0 0 1 1.9 1.5L19 13v5h-2v-2H7v2H5z"/><circle cx="7.5" cy="15.5" r="1"/><circle cx="16.5" cy="15.5" r="1"/>',
+    download:'<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/>',
+    upload:'<path d="M12 21V9"/><path d="M7 14l5-5 5 5"/><path d="M4 4h16"/>',
+    phone:'<path d="M5 4h4l2 5-3 2a12 12 0 0 0 5 5l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+    edit:'<path d="M4 20h4L18 10l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>',
+    camera:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l2-3h4l2 3"/><circle cx="12" cy="13" r="3.5"/>',
+    stethoscope:'<path d="M5 3v6a4 4 0 0 0 8 0V3"/><path d="M9 17a5 5 0 0 0 10 0v-3"/><circle cx="19" cy="11" r="2"/>',
+    pill:'<rect x="3" y="9" width="18" height="6" rx="3" transform="rotate(45 12 12)"/><line x1="8.5" y1="8.5" x2="15.5" y2="15.5"/>',
+    search:'<circle cx="11" cy="11" r="7"/><line x1="16" y1="16" x2="21" y2="21"/>',
+    clipboard:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="14" y2="14"/>',
+    yen:'<path d="M7 5l5 7 5-7"/><path d="M12 12v7"/><path d="M8 14h8M8 17h8"/>',
+    doc:'<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/>',
+    print:'<path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="1"/><path d="M7 17h10v4H7z"/>',
+    key:'<circle cx="8" cy="12" r="4"/><path d="M12 12h9"/><path d="M17 12v4M20 12v3"/>',
+    cloud:'<path d="M6 17a4 4 0 0 1 .5-8 5 5 0 0 1 9.5 1.5A3.5 3.5 0 0 1 18 17z"/>',
+    clock:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
+    star:'<polygon points="12 3 14.5 9 21 9.5 16 13.5 17.5 20 12 16.5 6.5 20 8 13.5 3 9.5 9.5 9"/>',
+    chart:'<path d="M4 20V4"/><path d="M4 20h16"/><rect x="7" y="12" width="3" height="5"/><rect x="12" y="8" width="3" height="9"/><rect x="17" y="5" width="3" height="12"/>',
+    up:'<path d="M5 15l7-7 7 7"/>',
+    down:'<path d="M5 9l7 7 7-7"/>',
+    check:'<path d="M4 12l5 5L20 6"/>',
+    book:'<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 5v14"/>',
+  };
+  const p = P[name] || '';
+  return `<svg class="ic" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;flex-shrink:0;">${p}</svg>`;
+}
+
+
+const patients = [
+  {name:"サンプル 太郎", furi:"サンプル タロウ", med:"サンプル医院", ins:"医療", lastRx:"2026/1/6", days:14, expire:"2026/1/20", nextRx:"2026/1/18", visitDay:"火", visitFreq:2, method:"一包化", dispense:"処方分を一度に渡す", addr:"大阪市中央区1-1-1", park:"施設前", parkAddr:"", cm:"（サンプル）", tel:"", note:"これはサンプルです。実データは患者編集タブの「取込」ボタンでJSONを読み込むか、クラウド同期で入ります。", count:"4回/月", report:"医師のみ", area:"中央区", lat:34.6863, lng:135.5220, print:{date:true,name:true,clinic:false,drug:true,usages:[{usage:"朝食後",color:"red",line:true,dashed:false}]}, records:[], status:"対応中", presc:"本人から受取", billNote:"", specialPrint:false, specialPrintNote:"", store:"s1"}
+];
+
+// ===== ユーティリティ =====
+function parseDate(s){ if(!s) return null; const p=s.split("/"); return new Date(+p[0], +p[1]-1, +p[2]); }
+function fmtDate(d){ if(!d) return ""; return d.getFullYear()+"/"+(d.getMonth()+1)+"/"+d.getDate(); }
+function addDays(s, n){ const d=parseDate(s); if(!d||isNaN(n)) return ""; d.setDate(d.getDate()+(+n)); return fmtDate(d); }
+// 日付欄(type=date)用の相互変換： "2026/6/1" <-> "2026-06-01"
+function toISO(s){ if(!s) return ""; const p=String(s).split("/"); if(p.length!==3) return ""; return p[0]+"-"+String(p[1]).padStart(2,"0")+"-"+String(p[2]).padStart(2,"0"); }
+function fromISO(s){ if(!s) return ""; const p=String(s).split("-"); if(p.length!==3) return ""; return (+p[0])+"/"+(+p[1])+"/"+(+p[2]); }
+// 住所から「○○区」を自動抽出（エリア分類用）
+function timeLabel(p){
+  if(p.timeBand==="時間指定" && (p.timeFrom||p.timeTo)) return (p.timeFrom||"")+"〜"+(p.timeTo||"");
+  if(p.timeBand==="AM") return "午前";
+  if(p.timeBand==="PM") return "午後";
+  return p.timeNote || "";
+}
+function areaFromAddr(addr){ if(!addr) return ""; const a=String(addr); const k=a.match(/市([^\s　0-9０-９]{1,4}区)/); if(k) return k[1]; const k2=a.match(/^([^\s　0-9０-９]{1,4}区)/); if(k2) return k2[1]; const m=a.match(/^([^\s　0-9０-９]{1,6}[市町村])/); return m? m[1] : ""; }
+function daysUntil(s){ const d=parseDate(s); if(!d) return null; return Math.round((d-TODAY)/86400000); }
+function level(d){ if(d===null) return "gray"; if(d<=3) return "crit"; if(d<=7) return "soon"; return "ok"; }
+function levelLabel(d){ if(d===null) return "不明"; if(d<0) return "超過 "+(-d)+"日"; if(d===0) return "本日切れ"; return "あと"+d+"日"; }
+
+(function(){ const t=document.getElementById("today"); if(t) t.textContent = TODAY.getFullYear()+"/"+(TODAY.getMonth()+1)+"/"+TODAY.getDate()+" 現在"; })();
+
+// ===== サマリー =====
+function renderSummary(){
+  let crit=0,soon=0,ok=0;
+  patients.forEach(p=>{ const d=daysUntil(p.expire); const l=level(d); if(l==="crit")crit++; else if(l==="soon")soon++; else if(l==="ok")ok++; });
+  document.getElementById("summary").innerHTML = `
+    <div class="stat"><div class="num">${patients.length}</div><div class="lbl">登録患者</div></div>
+    <div class="stat danger"><div class="num">${crit}</div><div class="lbl">3日以内に切れ</div></div>
+    <div class="stat warn"><div class="num">${soon}</div><div class="lbl">7日以内に切れ</div></div>
+    <div class="stat safe"><div class="num">${ok}</div><div class="lbl">余裕あり</div></div>`;
+}
+
+// ===== 患者一覧 =====
+function renderList(){
+  const q = document.getElementById("search").value.trim();
+  const sort = document.getElementById("sortBy").value;
+  const stFilter = (document.getElementById("statusFilter")||{}).value || "all";
+  let arr = patients.filter(p => !q || p.name.includes(q) || p.furi.includes(q) || p.med.includes(q));
+  arr = arr.filter(p => stFilter==="all" || (p.status||"対応中")===stFilter);
+  arr = arr.slice().sort((a,b)=>{
+    if(sort==="name") return a.furi.localeCompare(b.furi,"ja");
+    if(sort==="day"){ const o={"月":1,"火":2,"水":3,"木":4,"金":5}; return (o[a.visitDay]||9)-(o[b.visitDay]||9); }
+    return (daysUntil(a.expire)??999)-(daysUntil(b.expire)??999);
+  });
+  document.getElementById("plist").innerHTML = arr.map(p=>{
+    const d=daysUntil(p.expire); const l=level(d);
+    const st=p.status||"対応中";
+    const stCls = st==="対応中"?"ok":st==="契約終了"?"gray":"soon";
+    return `<div class="pcard ${l}" onclick='openDetail(${JSON.stringify(p.name)})'>
+      <div>
+        <div class="name">${p.name} <span class="badge ${stCls}" style="font-size:10px;padding:2px 7px">${st}</span></div>
+        <div class="sub">${p.med}・${p.ins}・${p.visitDay}曜訪問</div>
+        <div class="days">切れ日 ${p.expire}（次回処方予定 ${p.nextRx}）</div>
+      </div>
+      <div class="right">
+        <span class="badge ${l}">${levelLabel(d)}</span>
+      </div>
+    </div>`;
+  }).join("") || `<p style="color:var(--ink-soft);text-align:center;padding:30px;">該当なし</p>`;
+}
+
+// ===== アラート =====
+function renderAlert(){
+  const arr = patients.filter(p=>{ const d=daysUntil(p.expire); return d!==null && d<=7; })
+    .sort((a,b)=>(daysUntil(a.expire)??999)-(daysUntil(b.expire)??999));
+  const el = document.getElementById("alertList");
+  if(!arr.length){ el.innerHTML=`<p style="text-align:center;color:var(--safe);padding:30px;font-weight:600;">✅ 7日以内に切れる患者はいません</p>`; return; }
+  el.innerHTML = arr.map(p=>{
+    const d=daysUntil(p.expire); const l=level(d);
+    return `<div class="pcard ${l}" onclick='openDetail(${JSON.stringify(p.name)})'>
+      <div>
+        <div class="name">${p.name} <span class="badge ${l}">${levelLabel(d)}</span></div>
+        <div class="sub">${p.med}・${p.visitDay}曜訪問</div>
+        <div class="days">切れ日 ${p.expire}／次回処方予定 ${p.nextRx}</div>
+      </div>
+      <div class="right"><span class="badge gray">${p.count}</span></div>
+    </div>`;
+  }).join("");
+}
+
+// ===== 月次カレンダー =====
+let mYear = TODAY.getFullYear(), mMonth = TODAY.getMonth(); // 0-indexed
+const WD_MAP = {"日":0,"月":1,"火":2,"水":3,"木":4,"金":5,"土":6};
+
+let showTypes={visit:true,expire:true,rx:true};
+function renderMonth(){
+  document.getElementById("monthTitle").textContent = mYear+"年 "+(mMonth+1)+"月";
+  const first = new Date(mYear, mMonth, 1);
+  const startDow = first.getDay();
+  const daysInMonth = new Date(mYear, mMonth+1, 0).getDate();
+
+  // 日付ごとのイベントを集約
+  const evts = {}; // day -> [{type,name}]
+  const add = (day,type,name)=>{ if(!showTypes[type]) return; if(!evts[day]) evts[day]=[]; evts[day].push({type,name}); };
+
+  patients.forEach(p=>{
+    // 訪問予定：訪問曜日の出現日を、月の訪問回数ぶんだけ均等配置
+    const dow = WD_MAP[p.visitDay];
+    if(dow!==undefined){
+      // その月の該当曜日の全日を収集
+      const cand=[];
+      for(let d=1; d<=daysInMonth; d++){ if(new Date(mYear,mMonth,d).getDay()===dow) cand.push(d); }
+      // 訪問回数（未設定なら該当曜日の回数＝毎週とみなす）
+      let freq = parseInt(p.visitFreq,10);
+      if(isNaN(freq) || freq<=0) freq = cand.length;
+      freq = Math.min(freq, cand.length);
+      // cand から freq 件を均等に間引いて選ぶ
+      const picked=[];
+      if(freq>=cand.length){ picked.push(...cand); }
+      else if(freq===1){ picked.push(cand[0]); }
+      else { const step=cand.length/freq; for(let k=0;k<freq;k++) picked.push(cand[Math.floor(k*step)]); }
+      picked.forEach(d=>add(d,"visit",p.name));
+    }
+    // 切れ日
+    const ex=parseDate(p.expire);
+    if(ex && ex.getFullYear()===mYear && ex.getMonth()===mMonth) add(ex.getDate(),"expire",p.name);
+    // 次回処方予定
+    const rx=parseDate(p.nextRx);
+    if(rx && rx.getFullYear()===mYear && rx.getMonth()===mMonth) add(rx.getDate(),"rx",p.name);
+  });
+
+  const wdNames=["日","月","火","水","木","金","土"];
+  let html = wdNames.map((w,i)=>`<div class="wd ${i===0?'sun':i===6?'sat':''}">${w}</div>`).join("");
+
+  // 先頭の空セル
+  for(let i=0;i<startDow;i++) html += `<div class="mcell empty"></div>`;
+
+  const order={expire:0,rx:1,visit:2};
+  monthEvts = evts; monthLabel = mYear+"/"+(mMonth+1);
+  for(let d=1; d<=daysInMonth; d++){
+    const dow = new Date(mYear,mMonth,d).getDay();
+    const isToday = (mYear===TODAY.getFullYear() && mMonth===TODAY.getMonth() && d===TODAY.getDate());
+    const list = (evts[d]||[]).slice();
+    list.sort((a,b)=>order[a.type]-order[b.type]);
+    const shown = list.slice(0,3);
+    const more = list.length-shown.length;
+    const evtHtml = shown.map(e=>{
+      const label = e.type==="expire"? "⚠"+e.name : e.type==="rx"? "Rx "+e.name : e.name;
+      return `<div class="mevt ${e.type}" onclick='event.stopPropagation();openDetail(${JSON.stringify(e.name)})'>${label}</div>`;
+    }).join("") + (more>0? `<div class="more">+${more}件</div>`:"");
+    const clickable = list.length? `onclick='openDayDetail(${d})'` : "";
+    html += `<div class="mcell ${isToday?'today':''} ${list.length?'has':''}" ${clickable}>
+      <div class="dnum ${dow===0?'sun':dow===6?'sat':''}">${d}</div>${evtHtml}</div>`;
+  }
+  document.getElementById("mgrid").innerHTML = html;
+}
+// 日別の全イベントをモーダル表示
+let monthEvts={}, monthLabel="";
+function openDayDetail(d){
+  const order={expire:0,rx:1,visit:2};
+  const list=(monthEvts[d]||[]).slice().sort((a,b)=>order[a.type]-order[b.type]);
+  const typeLabel={expire:"⚠ 切れ日",rx:"Rx 処方予定",visit:"訪問予定"};
+  const typeCls={expire:"crit",rx:"ok",visit:"gray"};
+  document.getElementById("dd-title").textContent = monthLabel+"/"+d+" の予定（"+list.length+"件）";
+  document.getElementById("dd-body").innerHTML = list.length? list.map(e=>`
+    <div class="ddrow" onclick='document.getElementById("dayModalBg").classList.remove("show");openDetail(${JSON.stringify(e.name)})'>
+      <span class="badge ${typeCls[e.type]}">${typeLabel[e.type]}</span>
+      <span class="ddname">${e.name}</span>${(function(){const pp=patients.find(x=>x.name===e.name);const t=pp?timeLabel(pp):'';return t&&e.type==='visit'?`<span class="badge gray">${t}</span>`:'';})()}
+    </div>`).join("") : `<p style="color:var(--ink-soft);padding:10px;">予定なし</p>`;
+  document.getElementById("dayModalBg").classList.add("show");
+}
+document.getElementById("prevMonth").onclick=()=>{ mMonth--; if(mMonth<0){mMonth=11;mYear--;} renderMonth(); };
+document.querySelectorAll(".lgbtn").forEach(b=>{
+  b.onclick=()=>{ const t=b.dataset.t; showTypes[t]=!showTypes[t]; b.classList.toggle("on",showTypes[t]); renderMonth(); };
+});
+document.getElementById("nextMonth").onclick=()=>{ mMonth++; if(mMonth>11){mMonth=0;mYear++;} renderMonth(); };
+
+
+// ===== マップ（エリア分類一覧）=====
+let mapArea = "all";
+function areaList(){ return [...new Set(patients.map(p=>p.area).filter(Boolean))]; }
+
+function renderMapFilter(){
+  const areas = ["all", ...areaList()];
+  document.getElementById("mapfilter").innerHTML = areas.map(v=>{
+    const cnt = v==="all"? patients.length : patients.filter(p=>p.area===v).length;
+    const label = v==="all"? "全エリア" : v;
+    return `<button class="${mapArea===v?'active':''}" onclick="setMapArea('${v}')">${label} (${cnt})</button>`;
+  }).join("");
+}
+// 介護施設データ・座標（renderFacList等より前に定義）
+let facilities=[
+  {name:"雅秀苑", addr:"大阪市住之江区南港北1-4-1", day:"", band:"", from:"", to:""},
+  {name:"特養カサブランカ", addr:"大阪市住之江区新北島8-1-80", day:"", band:"", from:"", to:""}
+];
+const AREA_COORD2={"浪速区":[34.652,135.496],"西成区":[34.648,135.492],"東住吉区":[34.615,135.523],"阿倍野区":[34.632,135.512],"住之江区":[34.609,135.479],"大正区":[34.648,135.476],"平野区":[34.612,135.550],"北区":[34.705,135.510],"中京区":[35.011,135.756]};
+function setMapArea(v){ mapArea=v; renderMapFilter(); renderMap(); }
+function facTimeLabel(f){
+  if(!f) return "";
+  if(f.band==="時間指定"){ return (f.from||"")+(f.to?("〜"+f.to):"")+"指定"; }
+  return f.band||"";
+}
+// 編集中の施設インデックス（null=新規追加モード）
+let facEditIdx = null;
+
+// フォームへ値を流し込む（編集開始時）
+function facFillForm(f){
+  document.getElementById("facName").value = f.name||"";
+  document.getElementById("facAddr").value = f.addr||"";
+  document.getElementById("facDay").value  = f.day||"";
+  document.getElementById("facBand").value = f.band||"";
+  const t = f.band==="時間指定";
+  const ff=document.getElementById("facFrom"), ft=document.getElementById("facTo");
+  ff.value=f.from||""; ft.value=f.to||"";
+  ff.style.display=t?"":"none"; ft.style.display=t?"":"none";
+}
+// フォームを空に戻す（追加・更新・キャンセル後）
+function facResetForm(){
+  document.getElementById("facName").value=""; document.getElementById("facAddr").value="";
+  document.getElementById("facDay").value=""; document.getElementById("facBand").value="";
+  document.getElementById("facFrom").value=""; document.getElementById("facTo").value="";
+  document.getElementById("facFrom").style.display="none"; document.getElementById("facTo").style.display="none";
+}
+// モード切替（追加 ⇔ 更新）
+function facSetMode(idx){
+  facEditIdx = idx;
+  const addBtn=document.getElementById("facAddBtn");
+  const cancelBtn=document.getElementById("facCancelBtn");
+  if(idx===null){ addBtn.textContent="＋ 追加"; cancelBtn.style.display="none"; }
+  else { addBtn.textContent="更新"; cancelBtn.style.display=""; }
+}
+// 編集開始
+function facStartEdit(i){
+  const f=facilities[i]; if(!f) return;
+  facFillForm(f); facSetMode(i); renderFacList();
+  const box=document.querySelector(".facbox"); if(box) box.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+(function(){
+  const fb=document.getElementById("facAddBtn");
+  const cb=document.getElementById("facCancelBtn");
+  const bandSel=document.getElementById("facBand");
+  if(bandSel) bandSel.onchange=()=>{
+    const t=bandSel.value==="時間指定";
+    document.getElementById("facFrom").style.display=t?"":"none";
+    document.getElementById("facTo").style.display=t?"":"none";
+  };
+  if(fb) fb.onclick=()=>{
+    const n=document.getElementById("facName").value.trim(), a=document.getElementById("facAddr").value.trim();
+    if(!n||!a){ alert("施設名と住所を入力してください"); return; }
+    const day=document.getElementById("facDay").value;
+    const band=document.getElementById("facBand").value;
+    const from=document.getElementById("facFrom").value, to=document.getElementById("facTo").value;
+    if(facEditIdx===null){
+      // 追加
+      facilities.push({name:n,addr:a,day,band,from,to});
+    } else {
+      // 更新（施設名が変わったら患者紐付け selectedFac のキーを追従）
+      const old=facilities[facEditIdx];
+      if(old && old.name!==n && selectedFac.has(old.name)){
+        selectedFac.delete(old.name); selectedFac.add(n);
+      }
+      facilities[facEditIdx]={name:n,addr:a,day,band,from,to};
+    }
+    facResetForm(); facSetMode(null);
+    renderFacList(); renderMap(); if(typeof renderSelGrid==="function") renderSelGrid();
+    if(typeof scheduleCloudSave==="function") scheduleCloudSave();
+  };
+  if(cb) cb.onclick=()=>{ facResetForm(); facSetMode(null); renderFacList(); };
+  try{ renderFacList(); }catch(e){ console.error("renderFacList:", e); }
+})();
+
+// ===== 介護施設 =====
+function facCoord(addr){
+  const area = areaFromAddr(addr);
+  const c = AREA_COORD2[area] || [34.648,135.494];
+  const a = String(addr);
+  let h=0; for(let i=0;i<a.length;i++) h+=a.charCodeAt(i);
+  return [c[0]+((h%9)-4)*0.0012, c[1]+((h%7)-3)*0.0012];
+}
+function renderFacList(){
+  const el=document.getElementById("facList"); if(!el) return;
+  el.innerHTML = facilities.length? facilities.map((f,i)=>{
+    const sched=[f.day?(f.day+"曜"):"", facTimeLabel(f)].filter(Boolean).join("・");
+    return `
+    <div class="facrow${facEditIdx===i?' editing':''}">
+      <div class="fi"><b>${f.name}</b>${sched?`<span class="wd" style="background:#e8f6f7;color:#25b7c0;margin-left:6px">${sched}</span>`:''}<div class="fa">${f.addr}</div></div>
+      <div class="facbtns">
+        <button class="fedit" data-i="${i}">編集</button>
+        <button class="fdel" data-i="${i}">削除</button>
+      </div>
+    </div>`;}).join("") : `<div class="fa" style="padding:6px">施設は未登録です</div>`;
+  el.querySelectorAll(".fedit").forEach(b=>{ b.onclick=()=>{ facStartEdit(+b.dataset.i); }; });
+  el.querySelectorAll(".fdel").forEach(b=>{ b.onclick=()=>{
+    const i=+b.dataset.i; const f=facilities[i]; if(f) selectedFac.delete(f.name);
+    facilities.splice(i,1);
+    // 削除対象が編集中だった／編集中インデックスがずれる場合の整合
+    if(facEditIdx!==null){ if(facEditIdx===i){ facResetForm(); facSetMode(null); } else if(facEditIdx>i){ facEditIdx--; } }
+    renderFacList(); renderMap(); if(typeof renderSelGrid==="function") renderSelGrid();
+    if(typeof scheduleCloudSave==="function") scheduleCloudSave();
+  }; });
+}
+
+function renderMap(){
+  let arr = mapArea==="all"? patients : patients.filter(p=>p.area===mapArea);
+  // エリアでグループ化して表示
+  const groups = {};
+  arr.forEach(p=>{ const a=p.area||"その他"; (groups[a]=groups[a]||[]).push(p); });
+  const el = document.getElementById("maplist");
+  if(!arr.length){ el.innerHTML=`<p style="text-align:center;color:var(--ink-soft);padding:30px;">該当なし</p>`; return; }
+  el.innerHTML = Object.keys(groups).sort().map(area=>{
+    const rows = groups[area].map(p=>`
+      <div class="maprow">
+        <div class="info">
+          <div class="n">${p.name}<span class="wd">${p.visitDay}曜</span>${timeLabel(p)?`<span class="wd" style="background:#fff3e0;color:#b26a00">${timeLabel(p)}</span>`:''}</div>
+          <div class="a">${p.addr}</div>
+          <div class="p">🅿 ${p.park}</div>
+        </div>
+        <div class="acts">
+          <a class="btn map" target="_blank" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.addr)}">${icon("map")}地図</a>
+        </div>
+      </div>`).join("");
+    return `<div class="areagroup"><div class="arealabel">${icon("pin")}${area}（${groups[area].length}件）</div>${rows}</div>`;
+  }).join("");
+  drawLeafMap(arr);
+}
+
+// エリア色
+const AREA_COLORS={"浪速区":"#e63946","西成区":"#f4a261","東住吉区":"#2a9d8f","阿倍野区":"#e76f51","住之江区":"#264653","大正区":"#25b7c0","平野区":"#3a86ff","中京区":"#06d6a0"};
+let _leafMap=null, _leafLayer=null;
+function drawLeafMap(arr){
+  const elc=document.getElementById("leafMap"); if(!elc||!window.L) return;
+  if(!_leafMap){
+    _leafMap=L.map("leafMap").setView([ORIGIN.lat,ORIGIN.lng],12);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(_leafMap);
+  }
+  if(_leafLayer) _leafLayer.remove();
+  _leafLayer=L.layerGroup().addTo(_leafMap);
+  // 薬局マーカー
+  L.circleMarker([ORIGIN.lat,ORIGIN.lng],{radius:9,color:"#fff",weight:2,fillColor:"#111",fillOpacity:1}).bindPopup("<b>"+ORIGIN.name+"</b><br>出発・帰着点").addTo(_leafLayer);
+  const pts=[[ORIGIN.lat,ORIGIN.lng]];
+  arr.forEach(p=>{
+    if(!p.lat||!p.lng) return;
+    const c=AREA_COLORS[p.area]||"#888";
+    const t=timeLabel(p)?("<br>"+icon("clock")+timeLabel(p)):"";
+    L.circleMarker([p.lat,p.lng],{radius:8,color:"#fff",weight:2,fillColor:c,fillOpacity:.95})
+      .bindPopup("<b>"+p.name+"</b>（"+(p.area||"")+" "+p.visitDay+"曜）<br>"+p.addr+t).addTo(_leafLayer);
+    pts.push([p.lat,p.lng]);
+  });
+  // 介護施設マーカー（建物色：紫）
+  facilities.forEach(f=>{
+    const c=facCoord(f.addr);
+    L.marker(c,{icon:L.divIcon({className:"facpin",html:`<div style="background:#25b7c0;color:#fff;width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h6"/></svg></div>`,iconSize:[26,26],iconAnchor:[13,13]})})
+      .bindPopup("<b>"+icon("building")+f.name+"</b><br>"+f.addr+"<br><i>介護施設</i>"+(([f.day?(f.day+"曜"):"",facTimeLabel(f)].filter(Boolean).join("・"))?("<br>訪問希望: "+[f.day?(f.day+"曜"):"",facTimeLabel(f)].filter(Boolean).join("・")):"")).addTo(_leafLayer);
+    pts.push(c);
+  });
+  if(pts.length>1){ try{ _leafMap.fitBounds(pts,{padding:[30,30]}); }catch(e){} }
+  setTimeout(()=>_leafMap.invalidateSize(),100);
+}
+
+// ===== 訪問ルート =====
+let selected = new Set();
+const ORIGIN = {lat:34.6480, lng:135.4940, name:"くりの木薬局", addr:"大阪府大阪市浪速区大国1-2-2 大国第2ビル1階"}; // 自店（出発・帰着点）
+
+function dist(a,b){ // 直線距離(km)概算
+  const R=6371, toR=x=>x*Math.PI/180;
+  const dLat=toR(b.lat-a.lat), dLng=toR(b.lng-a.lng);
+  const s=Math.sin(dLat/2)**2 + Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s));
+}
+
+let selectedFac = new Set();
+function renderSelGrid(){
+  const el=document.getElementById("selgrid");
+  if(!el) return;
+  // 施設セクション＋患者セクション
+  const facHtml = facilities.length ? `
+    <div class="selsec"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></svg> 介護施設</div>
+    ${facilities.map((f,fi)=>{
+      const on=selectedFac.has(f.name);
+      const sched=[f.day?(f.day+"曜"):"", facTimeLabel(f)].filter(Boolean).join("・");
+      return `<div class="selitem fac ${on?'sel':''}" data-fac="${fi}">
+        <div class="sn"><span class="check">${on?'✓':''}</span>${icon("building")}${f.name}</div>
+        <div class="se">${areaFromAddr(f.addr)||''}・施設${sched?('・'+sched):''}</div>
+      </div>`;
+    }).join("")}
+    <div class="selsec">${icon("user")}在宅患者</div>` : "";
+  el.innerHTML = facHtml + patients.map((p,idx)=>{
+    const on = selected.has(p.name);
+    const d = daysUntil(p.expire); const l = level(d);
+    const lc = l==='crit'?'danger':l==='soon'?'warn':'safe';
+    return `<div class="selitem ${on?'sel':''}" data-idx="${idx}">
+      <div class="sn"><span class="check">${on?'✓':''}</span>${p.name}</div>
+      <div class="se">${p.area||''}・${p.visitDay||''}曜・<span style="color:var(--${lc})">${levelLabel(d)}</span></div>
+    </div>`;
+  }).join("");
+  el.querySelectorAll(".selitem[data-idx]").forEach(it=>{
+    it.onclick=()=>{ const p=patients[+it.dataset.idx]; if(!p) return; if(selected.has(p.name)) selected.delete(p.name); else selected.add(p.name); renderSelGrid(); };
+  });
+  el.querySelectorAll(".selitem[data-fac]").forEach(it=>{
+    it.onclick=()=>{ const f=facilities[+it.dataset.fac]; if(!f) return; if(selectedFac.has(f.name)) selectedFac.delete(f.name); else selectedFac.add(f.name); renderSelGrid(); };
+  });
+}
+function toggleSel(name){ if(selected.has(name)) selected.delete(name); else selected.add(name); renderSelGrid(); }
+document.getElementById("clearSel").onclick=()=>{ selected.clear(); selectedFac.clear(); renderSelGrid(); document.getElementById("routeResult").innerHTML=""; };
+
+document.getElementById("buildRoute").onclick=()=>{
+  if(!selected.size && !selectedFac.size){ document.getElementById("routeResult").innerHTML=`<p style="text-align:center;color:var(--ink-soft);padding:20px;">患者または施設を1つ以上選択してください</p>`; return; }
+  const poolP = patients.filter(p=>selected.has(p.name));
+  const poolF = facilities.filter(f=>selectedFac.has(f.name)).map(f=>{ const c=facCoord(f.addr); return {name:f.name, addr:f.addr, lat:c[0], lng:c[1], isFac:true, area:areaFromAddr(f.addr)}; });
+  const pool = poolP.concat(poolF);
+
+  // ルート全長（くりの木薬局 → 順に訪問 → くりの木薬局へ帰着）
+  function routeLen(arr){
+    let t = dist(ORIGIN, arr[0]);
+    for(let i=0;i<arr.length-1;i++) t += dist(arr[i], arr[i+1]);
+    t += dist(arr[arr.length-1], ORIGIN);
+    return t;
+  }
+  // 最近傍法（初期解）
+  function nearest(){
+    let rest=pool.slice(), cur=ORIGIN, out=[];
+    while(rest.length){ let bi=0,bd=Infinity; rest.forEach((p,i)=>{const d=dist(cur,p);if(d<bd){bd=d;bi=i;}}); cur=rest[bi]; out.push(rest[bi]); rest.splice(bi,1); }
+    return out;
+  }
+  // 2-opt改善
+  function twoOpt(arr){
+    let best=arr.slice(), improved=true;
+    while(improved){
+      improved=false;
+      for(let i=0;i<best.length-1;i++) for(let k=i+1;k<best.length;k++){
+        const cand=best.slice(0,i).concat(best.slice(i,k+1).reverse(), best.slice(k+1));
+        if(routeLen(cand)<routeLen(best)-1e-9){ best=cand; improved=true; }
+      }
+    }
+    return best;
+  }
+  // 全順列（厳密解、少数のみ）
+  function permute(a){
+    if(a.length<=1) return [a];
+    const res=[];
+    a.forEach((v,i)=>{ const rest=a.slice(0,i).concat(a.slice(i+1)); permute(rest).forEach(p=>res.push([v,...p])); });
+    return res;
+  }
+
+  let ordered, method;
+  if(pool.length<=8){
+    // 厳密解：全順列から最短を選ぶ
+    let best=null, bestLen=Infinity;
+    permute(pool).forEach(perm=>{ const l=routeLen(perm); if(l<bestLen){bestLen=l;best=perm;} });
+    ordered=best; method="厳密最短";
+  } else {
+    // 近似解：最近傍＋2-opt
+    ordered=twoOpt(nearest()); method="最短近似(2-opt)";
+  }
+  const totalKm = routeLen(ordered);
+
+  // GoogleマップルートURL（くりの木薬局→各患者→くりの木薬局に帰着）
+  const pts = [ORIGIN, ...ordered, ORIGIN].map(p=> p.addr? encodeURIComponent(p.addr) : `${p.lat},${p.lng}`);
+  const gmapUrl = "https://www.google.com/maps/dir/" + pts.join("/");
+
+  let html = `<div class="routetop">
+    <div class="rt-title">${icon("car")}${ordered.length}件の最短訪問ルート（くりの木薬局を出発・帰着／総移動 約${totalKm.toFixed(1)}km・${method}）</div>
+    <a href="${gmapUrl}" target="_blank">→ Googleマップでこのルートを開く（往復）</a>
+  </div>`;
+  // 出発点カード
+  html += `<div class="routecard"><div class="rhead" style="background:var(--ink-soft)"><span class="seq" style="color:var(--ink-soft)">発</span><span class="rn">${ORIGIN.name}</span><span class="rb">出発</span></div></div>`;
+  html += ordered.map((p,i)=>{
+    if(p.isFac){
+      const fac=facilities.find(f=>f.name===p.name)||{};
+      const sched=[fac.day?(fac.day+"曜"):"", facTimeLabel(fac)].filter(Boolean).join("・");
+      return `<div class="routecard">
+        <div class="rhead" style="background:#25b7c0">
+          <span class="seq" style="color:#25b7c0">${i+1}</span>
+          <span class="rn">${icon("building")}${p.name}</span>
+          <span class="rb">${sched||'介護施設'}</span>
+        </div>
+        <div class="rbody">
+          <div class="rrow"><span class="k">住所</span><span>${p.addr}</span></div>
+          ${sched?`<div class="rrow"><span class="k">訪問希望</span><span>${sched}</span></div>`:''}
+          <div class="rbtn">
+            <a class="btn map" target="_blank" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.addr)}">${icon("map")}地図</a>
+          </div>
+        </div>
+      </div>`;
+    }
+    const d=daysUntil(p.expire); const l=level(d);
+    return `<div class="routecard">
+      <div class="rhead">
+        <span class="seq">${i+1}</span>
+        <span class="rn">${p.name}</span>
+        <span class="rb">${p.visitDay}曜${timeLabel(p)?(' '+timeLabel(p)):''}</span>
+      </div>
+      <div class="rbody">
+        <div class="rrow"><span class="k">切れ日</span><span><span class="badge ${l}">${levelLabel(d)}</span> ${p.expire}／次回処方 ${p.nextRx}</span></div>
+        <div class="rrow"><span class="k">頻度/算定</span><span>${p.count}・報告書:${p.report}</span></div>
+        <div class="rrow"><span class="k">住所</span><span>${p.addr}</span></div>
+        <div class="rrow"><span class="k">駐車</span><span>${p.park}${p.parkAddr?`　<span style="color:var(--primary-dark)">（住所: ${p.parkAddr}）</span>`:''}</span></div>
+        <div class="rrow"><span class="k">配薬</span><span>${p.method}／${p.dispense}</span></div>
+        <div class="rrow"><span class="k">印字</span><span>${packetSVG(p)}</span></div>
+        <div class="rrow"><span class="k">連携</span><span>${p.cm}</span></div>
+        <div class="rnote">${icon("note")}${p.note}</div>
+        <div class="rbtn">
+          <a class="btn map" target="_blank" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.addr)}">${icon("map")}自宅の地図</a>
+          ${p.parkAddr?`<a class="btn map" style="background:#25b7c0" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(p.parkAddr)}">🅿 駐車場へナビ</a>`:''}
+          ${p.tel?`<a class="btn tel" href="tel:${p.tel}">${icon("phone")}${p.tel}</a>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+  // 帰着カード
+  html += `<div class="routecard"><div class="rhead" style="background:var(--ink-soft)"><span class="seq" style="color:var(--ink-soft)">着</span><span class="rn">${ORIGIN.name}</span><span class="rb">帰着</span></div></div>`;
+  document.getElementById("routeResult").innerHTML = html;
+  drawRouteMap(ordered);
+};
+
+let _routeMap=null,_routeLayer=null;
+function drawRouteMap(ordered){
+  const wrap=document.getElementById("routeMapWrap"); const elc=document.getElementById("routeMap");
+  if(!wrap||!elc||!window.L) return;
+  wrap.style.display="block";
+  if(!_routeMap){
+    _routeMap=L.map("routeMap").setView([ORIGIN.lat,ORIGIN.lng],12);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(_routeMap);
+  }
+  if(_routeLayer) _routeLayer.remove();
+  _routeLayer=L.layerGroup().addTo(_routeMap);
+  const seq=[ORIGIN,...ordered,ORIGIN];
+  const latlngs=seq.filter(p=>p.lat&&p.lng).map(p=>[p.lat,p.lng]);
+  // ルート線
+  L.polyline(latlngs,{color:"#25b7c0",weight:3,opacity:.8,dashArray:"6 6"}).addTo(_routeLayer);
+  // 各地点に番号マーカー
+  seq.forEach((p,idx)=>{
+    if(!p.lat||!p.lng) return;
+    const isOrigin=(p===ORIGIN);
+    const label=isOrigin?(idx===0?"発":"着"):String(idx);
+    const color=isOrigin?"#111":(p.isFac?"#25b7c0":"#25b7c0");
+    const radius=p.isFac?"6px":"50%";
+    const icon=L.divIcon({className:"routepin",html:`<div style="background:${color};color:#fff;width:24px;height:24px;border-radius:${radius};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)">${label}</div>`,iconSize:[24,24],iconAnchor:[12,12]});
+    const ttl=isOrigin?p.name:(idx+". "+(p.isFac?"":"")+p.name);
+    L.marker([p.lat,p.lng],{icon}).bindPopup("<b>"+ttl+"</b>"+(isOrigin?"":"<br>"+p.addr)).addTo(_routeLayer);
+  });
+  if(latlngs.length>1){ try{ _routeMap.fitBounds(latlngs,{padding:[30,30]}); }catch(e){} }
+  setTimeout(()=>_routeMap.invalidateSize(),100);
+}
+
+// ===== 分包紙の印字プレビュー（用法区分ベース）=====
+const LINE_COLORS = {red:"#d32f2f", yellow:"#f9a825", green:"#2e7d32", blue:"#1565c0", black:"#222222"};
+const COLOR_LABELS = {red:"赤", yellow:"黄", green:"緑", blue:"青", black:"黒"};
+// 実務で使われる主な用法区分（厚労省の頻度上位＋一包化でよく使うもの）
+const USAGE_MASTER = [
+  "朝食後","昼食後","夕食後","毎食後",
+  "朝食前","昼食前","夕食前","毎食前",
+  "朝夕食後","朝昼食後","昼夕食後",
+  "寝る前","朝食後と寝る前","夕食後と寝る前","毎食後と寝る前",
+  "起床時","食間","頓服","隔日"
+];
+// 用法区分ごとの既定色（自治体の色分け慣習を参考にした初期値。変更可）
+const USAGE_DEFAULT_COLOR = {
+  "朝食後":"red","昼食後":"yellow","夕食後":"blue","寝る前":"green","毎食後":"black"
+};
+
+// 患者のprintを新形式へ正規化：{date,name,clinic, usages:[{usage,color,line,dashed}]}
+function normPrint(p){
+  if(!p.print) p.print={};
+  const pr=p.print;
+  if(pr.date===undefined) pr.date=true;
+  if(pr.name===undefined) pr.name=true;
+  if(pr.clinic===undefined) pr.clinic=false;
+  if(pr.drug===undefined) pr.drug=true;
+  if(!Array.isArray(pr.usages)){
+    // 旧形式からの移行：単一用法だったものを配列化
+    pr.usages = [{ usage: pr.usageText || "朝食後", color: pr.color || "blue", line: pr.line!==false, dashed: false }];
+  }
+  return pr;
+}
+
+// 1つの用法区分の分包紙SVG
+function packetOne(p, u){
+  const pr = normPrint(p);
+  const lineColor = LINE_COLORS[u.color || "blue"];
+  const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const W=300, H=152;
+  const parts=[];
+  let y=54;
+  // 用法文字＋ライン（用法は常に表示）
+  parts.push(`<text x="14" y="26" font-size="12" font-weight="700" fill="${lineColor}">${esc(u.usage)}</text>`);
+  if(u.line!==false){
+    const dash = u.dashed? `stroke-dasharray="7 4"` : "";
+    parts.push(`<line x1="74" y1="22" x2="${W-14}" y2="22" stroke="${lineColor}" stroke-width="2.5" ${dash}/>`);
+  }
+  if(pr.clinic){ parts.push(`<text x="14" y="${y}" font-size="9" fill="#888">${esc((p.med||'').split('／')[0])}</text>`); y+=16; }
+  if(pr.date){ parts.push(`<text x="14" y="${y}" font-size="11" fill="#333">2026年06月01日</text>`); y+=24; }
+  if(pr.name){ parts.push(`<text x="14" y="${y}" font-size="19" font-weight="700" fill="#111">${esc((p.name||'')+' 様')}</text>`); }
+  if(pr.drug){ parts.push(`<line x1="14" y1="${H-30}" x2="${W-14}" y2="${H-30}" stroke="#e0e0e0" stroke-width="1"/><text x="14" y="${H-14}" font-size="10" fill="#bbb" font-style="italic">薬品名（印字あり）</text>`); }
+  return `<svg viewBox="0 0 ${W} ${H}" class="packet" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="2" width="${W-4}" height="${H-4}" rx="4" fill="#fff" stroke="#cfd8dc" stroke-width="1.5"/>
+    <rect x="2" y="2" width="${W-4}" height="14" fill="#eceff1"/>
+    ${parts.join("")}
+  </svg>`;
+}
+
+// 患者の全用法区分の分包紙をまとめて描画
+function packetSVG(p){
+  const pr = normPrint(p);
+  if(!pr.usages.length) return `<div class="nopacket">用法区分が未設定です</div>`;
+  return `<div class="packets">` + pr.usages.map(u=>
+    `<div class="packetitem"><div class="packetlabel">${u.usage}</div>${packetOne(p,u)}</div>`
+  ).join("") + `</div>`;
+}
+
+
+// ===== 詳細モーダル =====
+function openDetail(name){
+  const p = patients.find(x=>x.name===name); if(!p) return;
+  const d=daysUntil(p.expire); const l=level(d);
+  document.getElementById("m-name").textContent=p.name;
+  document.getElementById("m-furi").textContent=p.furi+"　/　"+p.med;
+  document.getElementById("m-body").innerHTML=`
+    <div class="dsec">
+      <h3>服薬状況</h3>
+      <div class="row"><span class="k">配薬切れ日</span><span class="v"><span class="badge ${l}">${levelLabel(d)}</span> ${p.expire}</span></div>
+      <div class="row"><span class="k">最終処方日</span><span class="v">${p.lastRx}（${p.days}日分）</span></div>
+      <div class="row"><span class="k">処方切れ日</span><span class="v">${p.nextRx}</span></div>
+      <div class="row"><span class="k">訪問曜日</span><span class="v">${p.visitDay}曜</span></div>
+    </div>
+    <div class="dsec">
+      <h3>調剤・配薬方法</h3>
+      <div class="row"><span class="k">調剤方法</span><span class="v">${p.method}</span></div>
+      <div class="row"><span class="k">配薬方法</span><span class="v">${p.dispense}</span></div>
+    </div>
+    ${p.specialPrint ? `<div class="dsec">
+      <h3>分包紙の印字仕様（用法区分ごと）</h3>
+      ${p.specialPrintNote?`<div class="row"><span class="k">特殊印字メモ</span><span class="v">${String(p.specialPrintNote).replace(/</g,'&lt;')}</span></div>`:''}
+      <div id="packetPreview">${packetSVG(p)}</div>
+      <div class="prnote">※編集は「患者編集」タブで行えます</div>
+    </div>` : ``}
+    <div class="dsec">
+      <h3>居宅・連携</h3>
+      <div class="row"><span class="k">住所</span><span class="v">${p.addr}</span></div>
+      <div class="row"><span class="k">駐車場所</span><span class="v">${p.park}</span></div>
+      <div class="row"><span class="k">ケアマネ等</span><span class="v">${p.cm}</span></div>
+      <div class="row"><span class="k">保険／算定</span><span class="v">${p.ins}／${p.count}・報告書:${p.report}</span></div>
+    </div>
+    <div class="dsec">
+      <h3>申し送り（共通認識）</h3>
+      <div class="note-box">${p.note}</div>
+    </div>`;
+  let actions = `<a class="btn map" target="_blank" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.addr)}">${icon("map")}地図で開く</a>`;
+  if(p.tel) actions += `<a class="btn tel" href="tel:${p.tel}">${icon("phone")}${p.tel}</a>`;
+  document.getElementById("m-actions").innerHTML=actions;
+  document.getElementById("modalBg").classList.add("show");
+}
+document.getElementById("closeModal").onclick=()=>document.getElementById("modalBg").classList.remove("show");
+document.getElementById("modalBg").onclick=(e)=>{ if(e.target.id==="modalBg") e.currentTarget.classList.remove("show"); };
+
+// ===== タブ切替 =====
+document.querySelectorAll("nav.tabs button").forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll("nav.tabs button").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    document.getElementById("view-"+b.dataset.view).classList.add("active");
+    if(typeof onTabShow==="function") onTabShow(b.dataset.view);
+  };
+});
+document.getElementById("search").oninput=renderList;
+document.getElementById("sortBy").onchange=renderList;
+document.getElementById("statusFilter").onchange=renderList;
+
+// ===== 訪問入力（処方更新＋訪問記録の統合）=====
+let visitIdx = 0;
+let editingRecIdx = null; // 修正中の記録index（nullなら新規）
+
+// 履歴の記録を修正モードで開く（上書き方式）
+function editRecord(pIdx, rIdx){
+  visitIdx = pIdx;
+  editingRecIdx = rIdx;
+  // 訪問入力タブへ切替
+  document.querySelectorAll("nav.tabs button").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll("main .view").forEach(v=>v.classList.remove("active"));
+  const vb=document.querySelector('nav.tabs button[data-view="visit"]'); if(vb) vb.classList.add("active");
+  document.getElementById("view-visit").classList.add("active");
+  renderVisitSelect(); renderVisitForm();
+  const vf=document.getElementById("visitForm"); if(vf) vf.scrollIntoView({behavior:"smooth"});
+}
+let reportSign = { pharmacy:"", pharmacist:"" };
+// 担当薬剤師名は端末に記憶し、次回自動補完（店舗名はログイン時に自動設定）
+try{ const _pm=localStorage.getItem("zaitaku_last_pharmacist"); if(_pm) reportSign.pharmacist=_pm; }catch(e){}
+function renderVisitSelect(){
+  const sel=document.getElementById("visitSelect");
+  sel.innerHTML = patients.map((p,i)=>{
+    return `<option value="${i}" ${i===visitIdx?'selected':''}>${p.name}</option>`;
+  }).join("");
+}
+function renderVisitForm(){
+  const p=patients[visitIdx]; if(!p) return;
+  if(!Array.isArray(p.records)) p.records=[];
+  const d=daysUntil(p.expire); const l=level(d);
+  document.getElementById("visitForm").innerHTML = `
+    <h3 class="rectitle">${p.name} <span class="badge ${l}">${levelLabel(d)}</span></h3>
+
+    <div class="vsec"><div class="vseclabel">処方情報（更新すると切れ日が自動計算）</div>
+      <div class="recgrid">
+        <div class="recf"><label>処方日</label><input type="date" id="v-lastRx" value="${toISO(p.lastRx)}"></div>
+        <div class="recf"><label>処方日数</label><input type="number" id="v-days" value="${p.days||''}"></div>
+        <div class="recf"><label>配薬切れ日（薬が尽きる日・自動／上書き可）</label><input type="date" id="v-expire" class="calc" value="${toISO(p.expire)}"></div>
+        <div class="recf"><label>処方切れ日（次回処方が必要な日）</label><input type="date" id="v-nextRx" value="${toISO(p.nextRx)}"></div>
+      </div>
+    </div>
+
+    <div class="vsec"><div class="vseclabel">当日の訪問記録</div>
+      <div class="recgrid">
+        <div class="recf"><label>訪問日</label><input type="date" id="v-vdate" value="${toISO(fmtDate(TODAY))}"></div>
+        <div class="recf"><label>残薬数</label><input type="number" id="v-left" value="0"></div>
+        <div class="recf"><label>血圧/バイタル</label><input type="text" id="v-bp" placeholder="例 128/80 P72"></div>
+        <div class="recf"><label>体重(kg)</label><input type="text" id="v-weight" placeholder="例 52.3"></div>
+      </div>
+      <div class="recf"><label>コメント・申し送り</label><textarea id="v-cm" placeholder="体調・気づいた点など"></textarea></div>
+    </div>
+
+    <div class="vsec"><div class="vseclabel">居宅療養管理指導 報告書（7項目）</div>
+      <div style="background:#f4faf9;border:1px solid #d7ede9;border-radius:8px;padding:10px;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:13px;font-weight:700;color:#25b7c0;">${icon("note")}定型文</span>
+          <select id="tpl-target" style="padding:5px;border:1px solid #ccc;border-radius:6px;font-size:13px;">
+            <option value="r1">1.服薬状況</option><option value="r2">2.変更点</option>
+            <option value="r3">3.併用薬</option><option value="r4">4.訴え</option>
+            <option value="r5">5.考察</option><option value="r6">6.特記</option><option value="r7">7.申し送り</option>
+          </select>
+          <select id="tpl-select" style="padding:5px;border:1px solid #ccc;border-radius:6px;font-size:13px;min-width:160px;flex:1;">
+            <option value="">登録した定型文を選択…</option>
+          </select>
+          <button type="button" id="tpl-insert" class="rqbtn">挿入</button>
+          <button type="button" id="tpl-add" class="rqbtn" style="background:#25b7c0;">＋現在の内容を定型文に登録</button>
+          <button type="button" id="tpl-del" class="rqbtn" style="background:#e57373;">選択を削除</button>
+        </div>
+        <div style="font-size:11px;color:var(--ink-soft);margin-top:5px;">よく使う文章を登録すると、次回以降どの患者でもワンタップで挿入できます（この端末に保存）。</div>
+      </div>
+      <div class="recf"><label>1. 服薬状況・コンプライアンス <button type="button" class="rqbtn" data-t="r1" data-v="お薬カレンダーを使ってコンプライアンスは確保できております。">例文</button></label><textarea id="v-r1" placeholder="飲めているか／飲み残しが何日分あったか"></textarea></div>
+      <div class="recf"><label>2. 前回処方からの変更点 <button type="button" class="rqbtn" data-t="r2" data-v="変更なし。">変更なし</button></label><textarea id="v-r2" placeholder="変更点のみ記入（例：アムロジピン2.5mg→5mgに増量）"></textarea></div>
+      <div class="recf"><label>3. 併用薬および相互作用 <button type="button" class="rqbtn" data-t="r3" data-v="他院処方・OTCの併用なし。相互作用上の問題なし。">問題なし</button></label><textarea id="v-r3" placeholder="他院処方・OTCと、相互作用の有無"></textarea></div>
+      <div class="recf"><label>4. 患者・介護者の訴え（生の言葉）</label><textarea id="v-r4" placeholder="患者様の言葉をそのまま記入"></textarea></div>
+      <div class="recf"><label>5. 考察・薬学的管理指導・説明内容</label><textarea id="v-r5" placeholder="状況から考えられること・改善点・指導内容"></textarea></div>
+      <div class="recf"><label>6. その他特記事項（残薬がいつまで持つか） <button type="button" class="rqbtn" data-t="r6" data-v="__AUTO6__">自動入力</button></label><textarea id="v-r6" placeholder="今回処方で○/○までのお薬をお届けしています"></textarea></div>
+      <div class="recf"><label>7. 次回訪問予定・申し送り <button type="button" class="rqbtn" data-t="r7" data-v="次回処方依頼は特になし。">依頼なし</button></label><textarea id="v-r7" placeholder="次回処方依頼など（例：センノシド錠を頓服で10錠）"></textarea></div>
+      <div class="recgrid">
+        <div class="recf"><label>次回訪問予定日</label><input type="date" id="v-nextvisit"></div>
+        <div class="recf"><label>報告書 宛先</label>
+          <div class="paypick" id="v-report-to">
+            ${["医師","ケアマネ","両方"].map(s=>`<button type="button" class="paybtn" data-s="${s}">${s}</button>`).join("")}
+          </div>
+        </div>
+      </div>
+      <div class="recgrid">
+        <div class="recf"><label>薬局名（報告書に記載）</label><input type="text" id="v-pharmacy" placeholder="例 きのわ薬局" value="${(reportSign.pharmacy||'').replace(/"/g,'&quot;')}"></div>
+        <div class="recf"><label>担当薬剤師（報告書に記載・登録リストから選択）</label>
+          <input type="text" id="v-pharmacist" list="pharm-datalist" placeholder="選択または入力" value="${(reportSign.pharmacist||'').replace(/"/g,'&quot;')}">
+          <datalist id="pharm-datalist">${getPharmacists().map(n=>`<option value="${String(n).replace(/"/g,'&quot;')}"></option>`).join("")}</datalist>
+        </div>
+      </div>
+    </div>
+
+    <div class="vsec"><div class="vseclabel">支払いステータス</div>
+      <div class="recf"><label>支払い状況</label>
+        <div class="paypick" id="v-paypick">
+          ${["支払い済","未収","会計なし","その他"].map(s=>`<button type="button" class="paybtn" data-s="${s}">${s}</button>`).join("")}
+        </div>
+      </div>
+      <div class="recf" id="v-paynote-wrap"><label>支払いコメント</label><textarea id="v-paynote" placeholder="金額・受領方法・未収の経緯など"></textarea></div>
+    </div>
+
+    <div class="vsec"><div class="vseclabel">処方せん写真（任意・端末内に保存）</div>
+      <div class="recf">
+        <label>処方せん・お薬手帳などの写真を添付</label>
+        <label class="btn map" style="background:#25b7c0;cursor:pointer;display:inline-flex;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l2-3h4l2 3"/><circle cx="12" cy="13" r="3.5"/></svg> 写真を追加
+          <input id="v-photo-input" type="file" accept="image/*" multiple style="display:none;">
+        </label>
+        <div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">※自動で縮小して保存します。枚数が多いと端末の保存容量を圧迫するのでご注意ください。</div>
+        <div id="v-photo-thumbs" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
+      </div>
+    </div>
+
+    <button class="btn map" id="v-save" style="width:100%;justify-content:center;margin-top:6px;">✓ 記録する（処方更新＋訪問記録を保存）</button>
+    <div class="savemsg" id="v-msg"></div>`;
+
+  // 処方情報の即時反映＋切れ日自動計算
+  const recalc=()=>{
+    p.lastRx=fromISO(document.getElementById("v-lastRx").value);
+    p.days=+document.getElementById("v-days").value||0;
+    if(p.lastRx && p.days && !p._exprManual){
+      const auto=addDays(p.lastRx,p.days);
+      p.expire=auto; document.getElementById("v-expire").value=toISO(auto);
+      if(!p._nextRxManual){ const nr=addDays(auto,-2); p.nextRx=nr; document.getElementById("v-nextRx").value=toISO(nr); }
+    }
+  };
+  document.getElementById("v-lastRx").oninput=recalc;
+  document.getElementById("v-days").oninput=recalc;
+  document.getElementById("v-expire").oninput=(e)=>{ p.expire=fromISO(e.target.value); p._exprManual=true; };
+  document.getElementById("v-nextRx").oninput=(e)=>{ p.nextRx=fromISO(e.target.value); p._nextRxManual=true; };
+
+  // 支払い状況の選択（トグル式）
+  let payStatus="";
+  document.querySelectorAll("#v-paypick .paybtn").forEach(b=>{
+    b.onclick=()=>{
+      const s=b.dataset.s;
+      if(payStatus===s){ payStatus=""; } else { payStatus=s; }
+      document.querySelectorAll("#v-paypick .paybtn").forEach(x=>x.classList.toggle("on", x.dataset.s===payStatus));
+    };
+  });
+  // 報告書 宛先の選択（トグル式）
+  let reportTo="";
+  document.querySelectorAll("#v-report-to .paybtn").forEach(b=>{
+    b.onclick=()=>{
+      const s=b.dataset.s;
+      reportTo = (reportTo===s)? "" : s;
+      document.querySelectorAll("#v-report-to .paybtn").forEach(x=>x.classList.toggle("on", x.dataset.s===reportTo));
+    };
+  });
+  // 薬局名・薬剤師（全報告書共通でグローバル保持）
+  const ph=document.getElementById("v-pharmacy"), pm=document.getElementById("v-pharmacist");
+  if(ph) ph.oninput=()=>{ reportSign.pharmacy=ph.value; };
+  if(pm) pm.oninput=()=>{ reportSign.pharmacist=pm.value; try{ localStorage.setItem("zaitaku_last_pharmacist", pm.value); }catch(e){} };
+
+  // 項目6の自動文（残薬・切れ日から「○/○までのお薬をお届け」を生成）
+  const auto6 = ()=>{
+    const exp = document.getElementById("v-expire").value;
+    if(!exp) return "今回処方分のお薬をお届けしています。";
+    const d = new Date(exp);
+    return `今回処方で${d.getMonth()+1}月${d.getDate()}日までのお薬をお届けしています。`;
+  };
+  // 項目1の補助（残薬数から飲み残し文を生成）
+  const auto1 = ()=>{
+    const lo = +document.getElementById("v-left").value||0;
+    return lo>0 ? `お薬カレンダーを使用。${lo}日分（または${lo}個）の飲み残しを確認。`
+               : "お薬カレンダーを使ってコンプライアンスは確保できております。";
+  };
+  // 例文・自動入力ボタン（テキストエリアに挿入。空なら置換、入力済みなら改行追記）
+  document.querySelectorAll(".rqbtn").forEach(b=>{
+    b.onclick=()=>{
+      const ta=document.getElementById("v-"+b.dataset.t); if(!ta) return;
+      let v=b.dataset.v;
+      if(v==="__AUTO6__") v=auto6();
+      if(b.dataset.t==="r1") v=auto1();
+      ta.value = ta.value.trim() ? (ta.value.replace(/\s+$/,"")+"\n"+v) : v;
+    };
+  });
+
+  document.getElementById("v-save").onclick=()=>{
+    // 処方情報を確定
+    p.lastRx=fromISO(document.getElementById("v-lastRx").value);
+    p.days=+document.getElementById("v-days").value||0;
+    p.expire=fromISO(document.getElementById("v-expire").value);
+    p.nextRx=fromISO(document.getElementById("v-nextRx").value);
+    const gv=id=>(document.getElementById(id)||{value:""}).value;
+    const rec={
+      date: fromISO(document.getElementById("v-vdate").value),
+      leftover: +document.getElementById("v-left").value||0,
+      bp: gv("v-bp"),
+      weight: gv("v-weight"),
+      comment: gv("v-cm"),
+      report: {
+        r1: gv("v-r1"), r2: gv("v-r2"), r3: gv("v-r3"), r4: gv("v-r4"),
+        r5: gv("v-r5"), r6: gv("v-r6"), r7: gv("v-r7")
+      },
+      nextVisit: fromISO(document.getElementById("v-nextvisit").value),
+      reportTo: reportTo,
+      payStatus: payStatus,
+      payNote: gv("v-paynote"),
+      photos: (window._vPhotos||[]).slice()  // 処方せん写真（base64・圧縮済）
+    };
+    if(editingRecIdx!==null && p.records[editingRecIdx]){
+      // 上書き修正
+      p.records[editingRecIdx]=rec;
+      document.getElementById("v-msg").textContent="✅ 訪問記録を修正（上書き）しました";
+      editingRecIdx=null;
+    }else{
+      // 新規追加
+      p.records.push(rec);
+      document.getElementById("v-msg").textContent="✅ 処方更新と訪問記録を保存しました";
+    }
+    window._vPhotos=[];
+    setTimeout(()=>document.getElementById("v-msg").textContent="",4000);
+    renderVisitForm();
+    // 他ビュー連動
+    renderSummary(); renderList(); renderAlert(); renderMonth(); renderVisitSelect();
+    scheduleCloudSave();
+  };
+  // ===== 処方せん写真：追加時に縮小してbase64保持 =====
+  window._vPhotos = window._vPhotos || [];
+  const photoInput=document.getElementById("v-photo-input");
+  const thumbsEl=document.getElementById("v-photo-thumbs");
+  function renderPhotoThumbs(){
+    if(!thumbsEl) return;
+    thumbsEl.innerHTML = (window._vPhotos||[]).map((src,i)=>
+      `<div style="position:relative;">
+        <img src="${src}" style="width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid #ccc;">
+        <button type="button" data-i="${i}" class="v-photo-del" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:none;background:#e11;color:#fff;cursor:pointer;font-size:12px;line-height:1;">×</button>
+      </div>`).join("");
+    thumbsEl.querySelectorAll(".v-photo-del").forEach(b=>{
+      b.onclick=()=>{ window._vPhotos.splice(+b.dataset.i,1); renderPhotoThumbs(); };
+    });
+  }
+  function compressImage(file){
+    return new Promise((res)=>{
+      const img=new Image();
+      img.onload=()=>{
+        const max=1000; let {width:w,height:h}=img;
+        if(w>max||h>max){ const s=Math.min(max/w,max/h); w=Math.round(w*s); h=Math.round(h*s); }
+        const cv=document.createElement("canvas"); cv.width=w; cv.height=h;
+        cv.getContext("2d").drawImage(img,0,0,w,h);
+        res(cv.toDataURL("image/jpeg",0.6));
+      };
+      img.onerror=()=>res(null);
+      const r=new FileReader(); r.onload=()=>{img.src=r.result;}; r.readAsDataURL(file);
+    });
+  }
+  if(photoInput){
+    photoInput.onchange=async(e)=>{
+      for(const f of e.target.files){ const d=await compressImage(f); if(d) window._vPhotos.push(d); }
+      photoInput.value=""; renderPhotoThumbs();
+    };
+  }
+
+  // ===== 編集モード：既存記録の値をフォームへ復元（上書き方式）=====
+  if(editingRecIdx!==null && p.records[editingRecIdx]){
+    const r=p.records[editingRecIdx]; const rp=r.report||{};
+    const sv=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v||""; };
+    sv("v-vdate", toISO(r.date)); sv("v-left", r.leftover||"");
+    sv("v-bp", r.bp); sv("v-weight", r.weight); sv("v-cm", r.comment);
+    sv("v-r1",rp.r1); sv("v-r2",rp.r2); sv("v-r3",rp.r3); sv("v-r4",rp.r4);
+    sv("v-r5",rp.r5); sv("v-r6",rp.r6); sv("v-r7",rp.r7);
+    sv("v-nextvisit", toISO(r.nextVisit)); sv("v-paynote", r.payNote);
+    // トグル状態
+    if(r.reportTo){ reportTo=r.reportTo; document.querySelectorAll("#v-report-to .paybtn").forEach(x=>x.classList.toggle("on",x.dataset.s===reportTo)); }
+    if(r.payStatus){ payStatus=r.payStatus; document.querySelectorAll("#v-paypick .paybtn").forEach(x=>x.classList.toggle("on",x.dataset.s===payStatus)); }
+    window._vPhotos=(r.photos||[]).slice();
+    const sb=document.getElementById("v-save");
+    if(sb) sb.textContent="✓ この記録を上書き修正する";
+    const msg=document.getElementById("v-msg");
+    if(msg){ msg.textContent="修正モード：保存すると元の記録を上書きします"; msg.style.color="#c60"; }
+  }else{
+    window._vPhotos=[];
+  }
+  renderPhotoThumbs();
+
+  // ===== ユーザー定型文（テンプレ）：localStorageに保存 =====
+  const TPL_KEY="zaitaku_templates";
+  function loadTpls(){ try{ return JSON.parse(localStorage.getItem(TPL_KEY)||"{}"); }catch(e){ return {}; } }
+  function saveTpls(t){ try{ localStorage.setItem(TPL_KEY, JSON.stringify(t)); }catch(e){} }
+  const tplTarget=document.getElementById("tpl-target");
+  const tplSelect=document.getElementById("tpl-select");
+  function refreshTplSelect(){
+    if(!tplSelect||!tplTarget) return;
+    const t=loadTpls(); const list=t[tplTarget.value]||[];
+    tplSelect.innerHTML='<option value="">登録した定型文を選択…</option>'+
+      list.map((s,i)=>`<option value="${i}">${s.length>28?s.slice(0,28)+"…":s}</option>`).join("");
+  }
+  if(tplTarget) tplTarget.onchange=refreshTplSelect;
+  refreshTplSelect();
+  const tplIns=document.getElementById("tpl-insert");
+  if(tplIns) tplIns.onclick=()=>{
+    const t=loadTpls(); const list=t[tplTarget.value]||[]; const idx=tplSelect.value;
+    if(idx==="") return;
+    const ta=document.getElementById("v-"+tplTarget.value); if(!ta) return;
+    const v=list[+idx];
+    ta.value = ta.value.trim() ? (ta.value.replace(/\s+$/,"")+"\n"+v) : v;
+  };
+  const tplAdd=document.getElementById("tpl-add");
+  if(tplAdd) tplAdd.onclick=()=>{
+    const ta=document.getElementById("v-"+tplTarget.value); if(!ta) return;
+    const v=ta.value.trim(); if(!v){ alert("登録する文章を先に入力してください"); return; }
+    const t=loadTpls(); t[tplTarget.value]=t[tplTarget.value]||[];
+    if(!t[tplTarget.value].includes(v)){ t[tplTarget.value].push(v); saveTpls(t); refreshTplSelect(); }
+  };
+  const tplDel=document.getElementById("tpl-del");
+  if(tplDel) tplDel.onclick=()=>{
+    const idx=tplSelect.value; if(idx==="") return;
+    const t=loadTpls(); (t[tplTarget.value]||[]).splice(+idx,1); saveTpls(t); refreshTplSelect();
+  };
+
+  renderVisitHistory();
+}
+function renderVisitHistory(){
+  const p=patients[visitIdx];
+  const recs=(p.records||[]).map((r,idx)=>({r,idx})).reverse();
+  document.getElementById("visitHistory").innerHTML = `<h3 class="rectitle">訪問履歴（新しい順）</h3>` + (recs.length? recs.map(({r,idx})=>{
+    const rp=r.report||{};
+    return `
+    <div class="recitem">
+      <div class="recdate">${r.date} ${r.leftover>0?`<span class="badge soon">残薬${r.leftover}</span>`:''}${r.payStatus?`<span class="badge ${r.payStatus==='支払い済'?'ok':r.payStatus==='未収'?'crit':'gray'}" style="margin-left:6px">${r.payStatus}</span>`:''}${r.reportTo?`<span class="badge gray" style="margin-left:6px">報告:${r.reportTo}</span>`:''}</div>
+      ${(r.bp||r.weight)?`<div class="recbp">${icon("stethoscope")}${[r.bp, r.weight?`体重${r.weight}kg`:""].filter(Boolean).join("　")}</div>`:''}
+      ${r.comment?`<div class="reccm">${icon("note")}${r.comment}</div>`:''}
+      ${rp.r1?`<div class="reccm">${icon("pill")}服薬：${rp.r1}</div>`:''}
+      ${rp.r5?`<div class="reccm">${icon("search")}考察：${rp.r5}</div>`:''}
+      ${rp.r7?`<div class="reccm">${icon("clipboard")}申し送り：${rp.r7}</div>`:''}
+      ${r.payNote?`<div class="reccm">${icon("yen")}${r.payNote}</div>`:''}
+      ${(r.photos&&r.photos.length)?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">${r.photos.map(src=>`<img src="${src}" style="width:56px;height:56px;object-fit:cover;border-radius:5px;border:1px solid #ccc;cursor:pointer;" onclick="window.open('').document.write('<img src=\\'${src}\\' style=\\'max-width:100%\\'>')">`).join("")}</div>`:''}
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><button class="repbtn" onclick="openReport(${visitIdx},${idx})">${icon("doc")}報告書を表示・印刷</button><button class="repbtn" style="background:#6b7280" onclick="editRecord(${visitIdx},${idx})">${icon("edit")}この記録を修正</button></div>
+    </div>`;}).join("") : `<p style="color:var(--ink-soft);padding:14px;">記録がありません</p>`);
+}
+
+// 報告書を別ウィンドウで組み立てて表示（印刷／PDF保存可）
+function openReport(pIdx, rIdx){
+  const p=patients[pIdx]; const r=(p.records||[])[rIdx]; if(!r) return;
+  const esc=s=>String(s||"").replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const row=(label,val)=> val? `<tr><th>${label}</th><td>${esc(val).replace(/\n/g,'<br>')}</td></tr>` : "";
+  const today=fmtDate(TODAY);
+  const html=`<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>居宅療養管理指導報告書 ${esc(p.name)}</title>
+  <style>
+    body{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;color:#1a1a1a;padding:32px 40px;line-height:1.7;font-size:14px;}
+    h1{font-size:20px;text-align:center;margin-bottom:6px;letter-spacing:.1em;}
+    .sub{text-align:center;font-size:12px;color:#555;margin-bottom:20px;}
+    .head{display:flex;justify-content:space-between;font-size:13px;margin-bottom:14px;}
+    table{width:100%;border-collapse:collapse;margin-bottom:18px;}
+    th,td{border:1px solid #999;padding:8px 10px;text-align:left;vertical-align:top;font-size:13px;}
+    th{background:#f0f0f0;width:28%;white-space:nowrap;font-weight:600;}
+    .sign{margin-top:30px;font-size:13px;text-align:right;line-height:2;}
+    .note{font-size:11px;color:#777;margin-top:24px;border-top:1px solid #ccc;padding-top:8px;}
+    @media print{ .noprint{display:none;} body{padding:16px 20px;} }
+    .noprint{text-align:center;margin-bottom:18px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+    .noprint button{font-size:14px;padding:9px 20px;border:none;border-radius:8px;color:#fff;cursor:pointer;font-weight:700;}
+    .noprint .b-print{background:#6b7280;}
+    .noprint .b-mail{background:linear-gradient(120deg,#25b7c0,#25b7c0);}
+    .noprint .hint{flex-basis:100%;font-size:11px;color:#888;font-weight:400;margin-top:4px;}
+  </style></head><body>
+  <div class="noprint">
+    <button class="b-print" onclick="window.print()">${icon("print")}印刷 / PDF保存</button>
+    <button class="b-mail" id="mailBtn"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg> 報告書をメールで提出</button>
+    <span class="hint">「メールで提出」→PDFが自動ダウンロードされ、Gmail作成画面が開きます。開いたメールにDLしたPDFを添付してください。</span>
+  </div>
+  <h1>居宅療養管理指導 報告書</h1>
+  <div class="sub">（薬剤師による訪問薬剤管理指導の結果報告）</div>
+  <div class="head"><div>報告日：${today}</div><div>宛先：${esc(r.reportTo||"医師")} 御中</div></div>
+  <table>
+    ${row("利用者氏名", p.name + (p.furi?`（${p.furi}）`:""))}
+    ${row("住所", p.addr)}
+    ${row("医療機関 / 主治医", p.med)}
+    ${row("保険種別", p.ins)}
+    ${row("訪問日", r.date)}
+    ${row("バイタル", r.bp)}
+    ${row("体重", r.weight? r.weight+"kg":"")}
+  </table>
+  <table>
+    ${row("１．服薬状況・コンプライアンス", (r.report||{}).r1)}
+    ${row("２．前回処方からの変更点", (r.report||{}).r2)}
+    ${row("３．併用薬および相互作用", (r.report||{}).r3)}
+    ${row("４．患者・介護者の訴え", (r.report||{}).r4)}
+    ${row("５．考察・薬学的管理指導・説明内容", (r.report||{}).r5)}
+    ${row("６．その他特記事項", (r.report||{}).r6)}
+    ${row("７．次回訪問予定・申し送り", (r.report||{}).r7)}
+    ${row("次回訪問予定日", r.nextVisit)}
+  </table>
+  <div class="sign">薬局名：${esc(reportSign.pharmacy)||"______________________"}<br>担当薬剤師：${esc(reportSign.pharmacist)||"______________________"}　印</div>
+  <div class="note">※本様式は法定の定型様式ではなく、居宅療養管理指導で記載が求められる項目に基づく報告書のひな型です。記載のない項目は出力されません。</div>
+  <scr`+`ipt src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></scr`+`ipt>
+  <scr`+`ipt>
+    var REPORT = ${JSON.stringify({
+      patient: p.name,
+      date: r.date,
+      med: p.med||"",
+      reportTo: r.reportTo||"医師",
+      medEmail: p.medEmail||"",
+      cmEmail: p.cmEmail||"",
+      pharmacy: reportSign.pharmacy||"",
+      pharmacist: reportSign.pharmacist||"",
+      fileBase: "居宅療養管理指導報告書_"+(p.name||"").split(/\s|　/).join("")+"_"+(r.date||"").split("/").join("")
+    })};
+    document.getElementById("mailBtn").onclick = function(){
+      var btn=this; btn.disabled=true; btn.textContent="PDF生成中…";
+      var opt={ margin:10, filename:REPORT.fileBase+".pdf", image:{type:"jpeg",quality:.98},
+        html2canvas:{scale:2}, jsPDF:{unit:"mm",format:"a4",orientation:"portrait"} };
+      var node=document.body.cloneNode(true);
+      var np=node.querySelector(".noprint"); if(np) np.remove();
+      html2pdf().set(opt).from(node).save().then(function(){
+        var subject="【居宅療養管理指導報告書】"+REPORT.patient+"様（"+REPORT.date+"訪問分）";
+        var body=
+          REPORT.med+" 御侍史\\n\\n"+
+          "いつもお世話になっております。\\n"+
+          (REPORT.pharmacy?REPORT.pharmacy+"の":"")+(REPORT.pharmacist||"担当薬剤師")+"でございます。\\n\\n"+
+          REPORT.patient+"様の居宅療養管理指導報告書をお送りいたします。\\n"+
+          "（"+REPORT.date+"訪問分）\\n\\n"+
+          "■ お手数ですが、先ほどダウンロードされたPDFファイル\\n"+
+          "「"+REPORT.fileBase+".pdf」を本メールに添付のうえご送信ください。\\n\\n"+
+          "ご確認のほど、よろしくお願い申し上げます。\\n\\n"+
+          "----------------------------------------\\n"+
+          (REPORT.pharmacy||"")+"\\n"+
+          (REPORT.pharmacist?"担当："+REPORT.pharmacist:"")+"\\n"+
+          "----------------------------------------";
+        var toList=[];
+        if(REPORT.reportTo==="医師"||REPORT.reportTo==="両方"){ if(REPORT.medEmail) toList.push(REPORT.medEmail); }
+        if(REPORT.reportTo==="ケアマネ"||REPORT.reportTo==="両方"){ if(REPORT.cmEmail) toList.push(REPORT.cmEmail); }
+        var to=toList.join(",");
+        var url="https://mail.google.com/mail/?view=cm&fs=1&to="+encodeURIComponent(to)+"&su="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body);
+        window.open(url,"_blank");
+        btn.disabled=false; btn.textContent="報告書をメールで提出";
+      }).catch(function(e){
+        alert("PDF生成に失敗しました: "+e); btn.disabled=false; btn.textContent="報告書をメールで提出";
+      });
+    };
+  </scr`+`ipt>
+  </body></html>`;
+  const w=window.open("","_blank"); w.document.write(html); w.document.close();
+}
+document.getElementById("visitSelect").onchange=(e)=>{ visitIdx=+e.target.value; renderVisitForm(); };
+
+// ===== 服薬状況（アドヒアランス可視化）=====
+function renderAdherence(){
+  // 残薬の推移から状態を判定
+  const rows = patients.map(p=>{
+    const recs=(p.records||[]).slice().sort((a,b)=>(parseDate(a.date)-parseDate(b.date)));
+    const last = recs[recs.length-1];
+    const prevLeft = recs.length>=2? recs[recs.length-2].leftover : null;
+    const lastLeft = last? last.leftover : null;
+    let trend="-";
+    if(lastLeft!=null && prevLeft!=null){ trend = lastLeft>prevLeft? "up" : lastLeft<prevLeft? "down":"flat"; }
+    return {p, recs, last, lastLeft, trend};
+  }).filter(r=>r.recs.length>0);
+  rows.sort((a,b)=>(b.lastLeft??-1)-(a.lastLeft??-1));
+  const el=document.getElementById("adhList");
+  if(!rows.length){ el.innerHTML=`<p style="text-align:center;color:var(--ink-soft);padding:30px;">訪問記録がまだありません</p>`; return; }
+  el.innerHTML = rows.map(({p,recs,last,lastLeft,trend})=>{
+    // 残薬の簡易スパークライン
+    const vals=recs.map(r=>r.leftover||0);
+    const max=Math.max(1,...vals);
+    const bars=vals.map(v=>`<span class="spark" style="height:${4+v/max*24}px" title="${v}"></span>`).join("");
+    const warn = lastLeft>=7;
+    const trendLabel = trend==="up"?icon("up")+"増加":trend==="down"?icon("down")+"減少":trend==="flat"?"→ 横ばい":"";
+    const trendCls = trend==="up"?"crit":trend==="down"?"ok":"gray";
+    return `<div class="adhcard ${warn?'warn':''}" onclick='openDetail(${JSON.stringify(p.name)})'>
+      <div class="adhhead">
+        <span class="adhname">${p.name}</span>
+        <span class="badge ${trendCls}">残薬 ${lastLeft??'-'}（${trendLabel}）</span>
+      </div>
+      <div class="sparkwrap">${bars}</div>
+      <div class="adhsub">直近${recs.length}回の残薬推移${warn?' ・ <span style="color:var(--danger);font-weight:700;">⚠ 飲み残しが多い可能性</span>':''}</div>
+      ${last&&last.comment?`<div class="adhcm">${icon("note")}${last.comment}</div>`:''}
+    </div>`;
+  }).join("");
+}
+
+// ===== 算定・入退院 =====
+let bilFilterVal="all";
+function renderBilling(){
+  const q=((document.getElementById("bilSearch")||{}).value||"").trim();
+  const matchQ=p=> !q || p.name.includes(q) || (p.furi||"").includes(q) || (p.med||"").includes(q);
+  const fEl=document.getElementById("bilFilter");
+  const filters=[["all","全員"],["対応中","対応中"],["入院中","入院中"],["ショート中","ショート中"],["契約終了","契約終了"]];
+  fEl.innerHTML=filters.map(([v,l])=>{
+    const cnt = patients.filter(p=>matchQ(p) && (v==="all"||(p.status||"対応中")===v)).length;
+    return `<button class="${bilFilterVal===v?'active':''}" onclick="setBilFilter('${v}')">${l} (${cnt})</button>`;
+  }).join("");
+  let arr=patients.map((p,i)=>({p,i})).filter(({p})=>matchQ(p) && (bilFilterVal==="all"||(p.status||"対応中")===bilFilterVal));
+  const el=document.getElementById("bilTable");
+  el.innerHTML = arr.map(({p,i})=>{
+    const st=p.status||"対応中";
+    const stCls = st==="対応中"?"ok":st==="契約終了"?"gray":"soon";
+    return `<div class="bilcard">
+      <div class="bilhead"><span class="bilname">${p.name}</span><span class="badge ${stCls}">${st}</span></div>
+      <div class="bilgrid">
+        <div class="bilf"><label>保険</label>
+          <select data-i="${i}" data-f="ins"><option ${p.ins==='介護'?'selected':''}>介護</option><option ${p.ins==='医療'?'selected':''}>医療</option></select></div>
+        <div class="bilf"><label>月算定回数</label><input type="text" data-i="${i}" data-f="count" value="${p.count||''}"></div>
+        <div class="bilf"><label>報告書送付先</label><input type="text" data-i="${i}" data-f="report" value="${p.report||''}"></div>
+        <div class="bilf"><label>契約状況</label>
+          <select data-i="${i}" data-f="status">
+            ${["対応中","入院中","ショート中","契約終了"].map(s=>`<option ${st===s?'selected':''}>${s}</option>`).join("")}
+          </select></div>
+        <div class="bilf bilf-wide"><label>入退院・状況メモ</label><textarea data-i="${i}" data-f="billNote" rows="2">${(p.billNote||'')}</textarea></div>
+        <div class="bilf bilf-wide"><label>処方箋原本</label><textarea data-i="${i}" data-f="presc" rows="2">${(p.presc||'')}</textarea></div>
+      </div>
+    </div>`;
+  }).join("") || `<p style="text-align:center;color:var(--ink-soft);padding:30px;">該当なし</p>`;
+  el.querySelectorAll("[data-i]").forEach(inp=>{
+    inp.oninput=inp.onchange=()=>{ patients[+inp.dataset.i][inp.dataset.f]=inp.value; if(inp.dataset.f==="status") renderBilling(); if(typeof scheduleCloudSave==="function") scheduleCloudSave(); };
+  });
+}
+function setBilFilter(v){ bilFilterVal=v; renderBilling(); }
+(function(){ const s=document.getElementById("bilSearch"); if(s) s.oninput=renderBilling; })();
+
+// ===== 患者編集 =====
+let editIdx = 0;
+
+function renderEditSelect(){
+  const sel=document.getElementById("editSelect");
+  sel.innerHTML = patients.map((p,i)=>`<option value="${i}" ${i===editIdx?'selected':''}>${p.name}（${p.area||'-'}）</option>`).join("");
+}
+
+function ef(label, key, p, type, opts){
+  const v = (p[key] ?? "");
+  if(type==="select"){
+    const options = (opts||[]).map(o=>`<option ${String(v)===o?'selected':''}>${o}</option>`).join("");
+    return `<div class="effield"><label>${label}</label><select data-k="${key}"><option value="">未設定</option>${options}</select></div>`;
+  }
+  if(type==="textarea") return `<div class="effield"><label>${label}</label><textarea data-k="${key}">${String(v).replace(/</g,'&lt;')}</textarea></div>`;
+  if(type==="checkbox") return `<div class="effield"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" data-k="${key}" data-type="checkbox" ${v?'checked':''} style="width:auto;">${label}</label></div>`;
+  return `<div class="effield"><label>${label}</label><input type="${type||'text'}" data-k="${key}" value="${String(v).replace(/"/g,'&quot;')}"></div>`;
+}
+
+function renderEditForm(){
+  const p = patients[editIdx]; if(!p){ document.getElementById("editForm").innerHTML=""; return; }
+  const pr = normPrint(p);
+
+  document.getElementById("editForm").innerHTML = `
+    <div class="efcard">
+      <h3>基本情報</h3>
+      <div class="efgrid">
+        ${ef("氏名","name",p)}${ef("フリガナ","furi",p)}
+        ${ef("医療機関","med",p)}${ef("保険(介護/医療)","ins",p)}
+        ${ef("医師メール（報告書送付用）","medEmail",p)}
+      </div>
+    </div>
+    <div class="efcard">
+      <h3>訪問設定</h3>
+      <div class="effield">
+        <label>訪問曜日</label>
+        <div class="daypick" id="efDayPick"></div>
+      </div>
+      <div class="efgrid">
+        <div class="effield"><label>月の訪問回数</label>
+          <select id="efFreq">
+            <option value="">未設定</option>
+            <option value="1">月1回</option>
+            <option value="2">月2回（隔週）</option>
+            <option value="3">月3回</option>
+            <option value="4">月4回（毎週）</option>
+          </select>
+        </div>
+        <div class="effield"><label>訪問時間帯</label>
+          <select id="efTimeBand">
+            <option value="">指定なし</option>
+            <option value="AM">午前（AM）</option>
+            <option value="PM">午後（PM）</option>
+            <option value="時間指定">時間指定あり</option>
+          </select>
+        </div>
+      </div>
+      <div class="efgrid" id="efTimeRange" style="${p.timeBand==='時間指定'?'':'display:none'}">
+        <div class="effield"><label>開始時刻</label><input type="time" id="efTimeFrom" value="${p.timeFrom||''}"></div>
+        <div class="effield"><label>終了時刻</label><input type="time" id="efTimeTo" value="${p.timeTo||''}"></div>
+      </div>
+      <div class="effield"><label>希望時間・補足メモ（例：14時以降、早い時間が良い）</label>
+        <input type="text" id="efTimeNote" value="${(p.timeNote||'').replace(/"/g,'&quot;')}">
+      </div>
+    </div>
+    <div class="efcard">
+      <h3>請求・連携</h3>
+      <div class="efgrid">
+        ${ef("月算定回数","count",p)}${ef("報告書送付先","report",p)}
+      </div>
+      <div class="efgrid">
+        ${ef("支払い方法","payMethod",p,"select",["口座引落","現金（都度）","現金（月初）","振込","その他"])}
+      </div>
+    </div>
+    <div class="efcard">
+      <h3>調剤・配薬</h3>
+      ${ef("調剤方法","method",p)}
+      ${ef("配薬方法","dispense",p,"textarea")}
+    </div>
+    <div class="efcard">
+      <h3>居宅・連携</h3>
+      ${ef("住所","addr",p)}
+      ${ef("駐車場所（メモ）","park",p)}
+      ${ef("駐車場の住所（ナビ用・任意）","parkAddr",p)}
+      ${ef("ケアマネ等","cm",p)}
+      ${ef("ケアマネメール（報告書送付用）","cmEmail",p)}
+      ${ef("電話番号","tel",p)}
+      <div class="efgrid">${ef("緯度(lat)","lat",p,"number")}${ef("経度(lng)","lng",p,"number")}</div>
+      <div class="effield">
+        <button type="button" id="geocodeBtn" class="btn map" style="background:#25b7c0;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;"><path d="M12 21s-6-5.5-6-10a6 6 0 0 1 12 0c0 4.5-6 10-6 10z"/><circle cx="12" cy="11" r="2"/></svg> 住所から座標を取得</button>
+        <span id="geocodeMsg" style="font-size:12px;margin-left:8px;color:var(--ink-soft);"></span>
+        <div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">※住所欄を元に地図の座標を自動取得します（建物名・号室は外すと精度が上がります）。</div>
+      </div>
+    </div>
+    <div class="efcard">
+      <h3>申し送り（共通認識）</h3>
+      ${ef("申し送り","note",p,"textarea")}
+    </div>
+    <div class="efcard">
+      <h3>分包紙の印字仕様（用法区分ごと）</h3>
+      <div style="background:#fff8e6;border:1px solid #f0d98a;border-radius:8px;padding:10px;margin-bottom:10px;">
+        ${ef("特殊印字あり（ONにすると患者情報に印字仕様が表示されます）","specialPrint",p,"checkbox")}
+        ${ef("特殊印字メモ（任意）","specialPrintNote",p,"textarea")}
+        <div style="font-size:11px;color:var(--ink-soft);">※OFFの患者は、患者情報を開いても印字仕様は表示されません。</div>
+      </div>
+      <div class="effield">
+        <label>共通の印字項目</label>
+        <div class="toggles" id="efCommon"></div>
+      </div>
+      <div class="effield">
+        <label>この患者が持つ用法区分（タップで追加／解除）</label>
+        <div class="usagepick" id="efUsagePick"></div>
+      </div>
+      <div id="efUsageList"></div>
+      <div class="efpreview" id="efPreview" style="flex-direction:column">${packetSVG(p)}</div>
+    </div>
+    <div class="efsave">
+      <button class="btn del" id="efDelete">削除</button>
+      <button class="btn map" id="efDone">完了</button>
+    </div>
+    <div class="savemsg" id="efMsg"></div>`;
+
+  const refresh=()=>{ document.getElementById("efPreview").innerHTML=packetSVG(p); if(typeof scheduleCloudSave==="function") scheduleCloudSave(); };
+
+  // 基本フィールドの即時反映
+  document.querySelectorAll("#editForm [data-k]").forEach(inp=>{
+    if(inp.dataset.type==="checkbox"){
+      inp.onchange=()=>{ p[inp.dataset.k]=inp.checked; refresh(); if(typeof scheduleCloudSave==="function") scheduleCloudSave(); };
+      return;
+    }
+    inp.oninput=()=>{
+      let v=inp.value;
+      if(inp.dataset.k==="days") v=+v||0;
+      if(inp.dataset.k==="lat"||inp.dataset.k==="lng") v=parseFloat(v)||0;
+      p[inp.dataset.k]=v;
+      if(inp.dataset.k==="addr"){ p.area=areaFromAddr(p.addr); }
+      if(["name","med"].includes(inp.dataset.k)) refresh();
+      if(typeof scheduleCloudSave==="function") scheduleCloudSave();
+    };
+  });
+
+  // --- 訪問設定（曜日ボタン・回数・時間帯・時間メモ）---
+  const WD=["月","火","水","木","金","土","日"];
+  const dpEl=document.getElementById("efDayPick");
+  if(dpEl){
+    dpEl.innerHTML = WD.map(w=>`<button type="button" class="daybtn ${p.visitDay===w?'on':''}" data-w="${w}">${w}</button>`).join("");
+    dpEl.querySelectorAll(".daybtn").forEach(b=>{
+      b.onclick=()=>{ p.visitDay=b.dataset.w; dpEl.querySelectorAll(".daybtn").forEach(x=>x.classList.remove("on")); b.classList.add("on"); };
+    });
+  }
+  const fq=document.getElementById("efFreq");
+  if(fq){ fq.value = p.visitFreq? String(p.visitFreq):""; fq.onchange=()=>{ p.visitFreq = fq.value? +fq.value : ""; }; }
+  const tb=document.getElementById("efTimeBand");
+  if(tb){ tb.value = p.timeBand||""; tb.onchange=()=>{ p.timeBand=tb.value; const tr=document.getElementById("efTimeRange"); if(tr) tr.style.display = tb.value==="時間指定"? "grid":"none"; }; }
+  const tf=document.getElementById("efTimeFrom"); if(tf){ tf.onchange=()=>{ p.timeFrom=tf.value; }; }
+  const tt=document.getElementById("efTimeTo"); if(tt){ tt.onchange=()=>{ p.timeTo=tt.value; }; }
+  const tn=document.getElementById("efTimeNote");
+  if(tn){ tn.oninput=()=>{ p.timeNote=tn.value; }; }
+
+  // 共通項目トグル（日付・氏名・クリニック名）
+  const commonItems=[["date","日付"],["name","氏名"],["clinic","クリニック名"],["drug","薬品名"]];
+  const cmEl=document.getElementById("efCommon");
+  cmEl.innerHTML = commonItems.map(([k,l])=>`<button class="tg ${pr[k]?'on':''}" data-k="${k}">${l}: ${pr[k]?'あり':'なし'}</button>`).join("");
+  cmEl.querySelectorAll(".tg").forEach(b=>{
+    b.onclick=()=>{ const k=b.dataset.k; pr[k]=!pr[k]; b.classList.toggle("on",pr[k]); b.textContent=commonItems.find(t=>t[0]===k)[1]+": "+(pr[k]?'あり':'なし'); refresh(); };
+  });
+
+  // 用法区分の選択（マスタから追加／解除）
+  const hasUsage = u => pr.usages.some(x=>x.usage===u);
+  const upEl=document.getElementById("efUsagePick");
+  const buildUsagePick=()=>{
+    upEl.innerHTML = USAGE_MASTER.map(u=>`<button class="utag ${hasUsage(u)?'on':''}" data-u="${u}">${u}</button>`).join("");
+    upEl.querySelectorAll(".utag").forEach(b=>{
+      b.onclick=()=>{
+        const u=b.dataset.u;
+        if(hasUsage(u)){ pr.usages=pr.usages.filter(x=>x.usage!==u); }
+        else { pr.usages.push({usage:u, color:(USAGE_DEFAULT_COLOR[u]||"black"), line:true, dashed:false}); }
+        buildUsagePick(); buildUsageList(); refresh();
+      };
+    });
+  };
+  // 各用法区分の詳細編集（色・ライン有無・破線）
+  const buildUsageList=()=>{
+    const el=document.getElementById("efUsageList");
+    if(!pr.usages.length){ el.innerHTML=`<div class="tehint">用法区分を1つ以上選択してください</div>`; return; }
+    el.innerHTML = pr.usages.map((u,i)=>`
+      <div class="ucard">
+        <div class="uchead">${u.usage}</div>
+        <div class="ucrow">
+          <span class="uclabel">色</span>
+          <span class="ucswatch">${Object.keys(LINE_COLORS).map(c=>`<button class="swatch ${u.color===c?'on':''}" data-i="${i}" data-c="${c}" style="background:${LINE_COLORS[c]}" title="${COLOR_LABELS[c]}"></button>`).join("")}</span>
+        </div>
+        <div class="ucrow">
+          <button class="tg ${u.line?'on':''}" data-i="${i}" data-t="line">ライン: ${u.line?'あり':'なし'}</button>
+          <button class="tg ${u.dashed?'on':''}" data-i="${i}" data-t="dashed">破線: ${u.dashed?'あり':'なし'}</button>
+        </div>
+      </div>`).join("");
+    el.querySelectorAll(".swatch").forEach(b=>{
+      b.onclick=()=>{ pr.usages[+b.dataset.i].color=b.dataset.c; buildUsageList(); refresh(); };
+    });
+    el.querySelectorAll(".tg").forEach(b=>{
+      b.onclick=()=>{ const i=+b.dataset.i,t=b.dataset.t; pr.usages[i][t]=!pr.usages[i][t]; buildUsageList(); refresh(); };
+    });
+  };
+  buildUsagePick(); buildUsageList();
+
+  // 住所から座標を取得（OpenStreetMap Nominatim・端末側で実行）
+  const gcBtn=document.getElementById("geocodeBtn");
+  if(gcBtn) gcBtn.onclick=async()=>{
+    const gcMsg=document.getElementById("geocodeMsg");
+    // 住所は建物名・号室を落として精度を上げる
+    let q=(p.addr||"").split(/[\s　]/)[0];
+    q=q.replace(/[0-9０-９\-－]+号室?.*$/,"").trim();
+    if(!q){ if(gcMsg){gcMsg.textContent="住所が未入力です"; gcMsg.style.color="#c00";} return; }
+    if(gcMsg){ gcMsg.textContent="取得中…"; gcMsg.style.color="var(--ink-soft)"; }
+    try{
+      const url="https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=jp&q="+encodeURIComponent(q);
+      const res=await fetch(url,{headers:{"Accept":"application/json"}});
+      const arr=await res.json();
+      if(arr && arr.length){
+        p.lat=parseFloat(arr[0].lat); p.lng=parseFloat(arr[0].lon);
+        // 座標欄に反映
+        const latEl=document.querySelector('#editForm [data-k="lat"]');
+        const lngEl=document.querySelector('#editForm [data-k="lng"]');
+        if(latEl) latEl.value=p.lat; if(lngEl) lngEl.value=p.lng;
+        if(gcMsg){ gcMsg.textContent="✅ 取得しました ("+p.lat.toFixed(4)+", "+p.lng.toFixed(4)+")"; gcMsg.style.color="#2a8a2a"; }
+      }else{
+        if(gcMsg){ gcMsg.textContent="⚠ 該当なし。住所を簡略化して再試行してください"; gcMsg.style.color="#c60"; }
+      }
+    }catch(err){
+      if(gcMsg){ gcMsg.textContent="⚠ 取得失敗（通信制限の可能性）"; gcMsg.style.color="#c00"; }
+    }
+  };
+
+  // 完了：全ビュー再描画
+  document.getElementById("efDone").onclick=()=>{
+    renderSummary(); renderList(); renderAlert(); renderMonth(); renderSelGrid(); renderMapFilter(); renderMap(); renderEditSelect();
+    const m=document.getElementById("efMsg"); m.textContent="✅ 反映しました";
+    setTimeout(()=>m.textContent="",4000);
+    scheduleCloudSave();
+  };
+  // 削除
+  document.getElementById("efDelete").onclick=()=>{
+    if(!confirm(p.name+" を削除しますか？")) return;
+    patients.splice(editIdx,1); editIdx=Math.max(0,editIdx-1);
+    renderEditSelect(); renderEditForm();
+    renderSummary(); renderList(); renderAlert(); renderMonth(); renderSelGrid(); renderMapFilter(); renderMap();
+    scheduleCloudSave();
+  };
+}
+
+document.getElementById("editSelect").onchange=(e)=>{ editIdx=+e.target.value; renderEditForm(); };
+document.getElementById("newPatient").onclick=()=>{
+  patients.push({ name:"新規患者", furi:"", med:"", ins:"医療", area:"", visitDay:"火",
+    lastRx:"", days:14, expire:"", nextRx:"", count:"4回/月", report:"医師のみ",
+    method:"一包化", dispense:"", addr:"", park:"", cm:"", tel:"", note:"", payMethod:"", medEmail:"", cmEmail:"",
+    lat:34.648, lng:135.494, print:{date:true,name:true,clinic:false,usages:[{usage:"朝食後",color:"red",line:true,dashed:false}]} });
+  editIdx=patients.length-1; renderEditSelect(); renderEditForm();
+};
+
+// ===== 患者データJSON取込 =====
+(function(){
+  const inp=document.getElementById("importJson");
+  const msg=document.getElementById("importMsg");
+  if(!inp) return;
+  inp.onchange=(e)=>{
+    const file=e.target.files[0]; if(!file) return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      try{
+        const arr=JSON.parse(reader.result);
+        if(!Array.isArray(arr)) throw new Error("配列形式のJSONではありません");
+        if(!arr.length) throw new Error("データが空です");
+        // 簡易バリデーション：nameがある要素だけ
+        const valid=arr.filter(p=>p && typeof p.name==="string" && p.name.trim());
+        if(!valid.length) throw new Error("有効な患者データ（name）が見つかりません");
+        const mode=confirm(`${valid.length}件の患者データを読み込みます。\n\n「OK」＝現在の患者を全て置き換える\n「キャンセル」＝現在のデータに追加する`);
+        // 各患者にstore付与・records等の欠損を補完
+        const norm=valid.map(p=>({
+          records:[], print:{date:true,name:true,clinic:false,drug:true,usages:[{usage:"朝食後",color:"red",line:true,dashed:false}]},
+          status:"対応中", visitFreq:2, lat:34.65, lng:135.50,
+          ...p,
+          store: currentStore||"s1"
+        }));
+        if(mode){
+          // 全置換（現在の店舗分）
+          patients.length=0; norm.forEach(p=>patients.push(p));
+        }else{
+          // 追加
+          norm.forEach(p=>patients.push(p));
+        }
+        editIdx=0; renderEditSelect(); renderEditForm();
+        // 他ビュー連動
+        try{ renderSummary(); renderList(); renderAlert(); renderMonth(); renderMapFilter&&renderMapFilter(); }catch(_){}
+        // クラウドが設定済みなら自動でスプレッドシートに保存
+        if(typeof cloudReady==="function" && cloudReady()){
+          const sid = currentStore || "s1";
+          if(!currentStore){ currentStore = sid; }
+          saveCurrentStoreData(); // patients(取込結果)をallPatientsへ確実に反映
+          if(msg){ msg.textContent=`✅ ${norm.length}件を${mode?"置換":"追加"}で読み込みました。スプレッドシートに保存中…`; msg.style.color="#2a8a2a"; }
+          cloudSaveStore(sid).then(()=>{
+            if(msg){ msg.textContent=`✅ ${norm.length}件を読み込み、スプレッドシートに保存しました。`; }
+          }).catch(err=>{
+            if(msg){ msg.textContent="⚠ 読込はできましたが保存に失敗: "+err.message; msg.style.color="#c00"; }
+          });
+        }else{
+          if(msg){ msg.textContent=`✅ ${norm.length}件を${mode?"置換":"追加"}で読み込みました（クラウド未設定のため保存はされていません）。`; msg.style.color="#2a8a2a"; }
+        }
+      }catch(err){
+        if(msg){ msg.textContent="⚠ 読込失敗: "+err.message; msg.style.color="#c00"; }
+      }
+      inp.value="";
+    };
+    reader.readAsText(file);
+  };
+})();
+
+// ===== タブ切替時に編集フォーム初期化 =====
+function onTabShow(view){
+  if(view==="edit"){ renderEditSelect(); renderEditForm(); }
+  if(view==="visit"){ renderVisitSelect(); renderVisitForm(); }
+  if(view==="billing"){ renderBilling(); }
+  if(view==="map"){ renderMap(); setTimeout(()=>{ if(_leafMap) _leafMap.invalidateSize(); },150); }
+  if(view==="route"){ setTimeout(()=>{ if(_routeMap) _routeMap.invalidateSize(); },150); }
+  if(view==="list") renderList();
+  if(view==="month") renderMonth();
+  if(view==="list"||view==="alert") renderSummary();
+  if(view==="admin"){ renderAdmin(); }
+  if(view==="pharmacists"){ renderPharmacistList(); }
+}
+
+// ===== 初期描画（店舗選択後に呼ぶ） =====
+function initApp(){
+  [renderSummary, renderList, renderAlert, renderMonth, renderSelGrid, renderMapFilter, renderMap, renderEditSelect].forEach(fn=>{
+    try{ fn(); }catch(e){ console.error("init error in "+fn.name+":", e); }
+  });
+}
+
+// ===== 認証・店舗管理 =====
+// 全患者・全施設を退避し、storeフィールドを付与（未設定は最初の店舗）
+let stores = [{id:"s1", name:"きのわ薬局 本店", loginId:"honten", loginPw:"honten1234"}];
+
+// 現在ログイン中の店舗の薬剤師リストを取得/保存（store.pharmacists に保持＝同期対象）
+function getCurrentStoreObj(){
+  if(!currentStore) return null;
+  return stores.find(s=>s.id===currentStore)||null;
+}
+function getPharmacists(){
+  const st=getCurrentStoreObj();
+  if(!st) return [];
+  if(!Array.isArray(st.pharmacists)) st.pharmacists=[];
+  return st.pharmacists;
+}
+function addPharmacist(name){
+  const st=getCurrentStoreObj(); if(!st) return false;
+  if(!Array.isArray(st.pharmacists)) st.pharmacists=[];
+  const n=(name||"").trim(); if(!n) return false;
+  if(st.pharmacists.includes(n)) return false;
+  st.pharmacists.push(n); return true;
+}
+function removePharmacist(name){
+  const st=getCurrentStoreObj(); if(!st||!Array.isArray(st.pharmacists)) return;
+  const i=st.pharmacists.indexOf(name); if(i>=0) st.pharmacists.splice(i,1);
+}
+let adminAcct = { id:"admin", pw:"admin1234" };
+let allPatients = patients.map(p=> (p.store?p:{...p, store:"s1"}) );
+let allFacilities = facilities.map(f=> (f.store?f:{...f, store:"s1"}) );
+let currentUser = null;
+let currentStore = null;
+
+// ===================================================================
+// クラウド同期（GAS経由 + AES暗号化）
+//   HTMLはGAS URL/合言葉/暗号化パスワードのみ保持（GitHubトークンはGAS側）
+//   データを Firebase Firestore にリアルタイム保存/読込する
+// ===================================================================
+// Firestore 構造:
+//   meta/config                     … { stores, adminAcct }
+//   stores/{storeId}/patients/{id}  … 患者1件ずつ
+//   stores/{storeId}/facilities/{id}… 施設1件ずつ
+
+// Firebaseが設定済み・接続済みか
+function cloudReady(){
+  return !!(window.FB && window.FB.ready && window.FB.db);
+}
+// 旧設定関数（互換のため残すが実質未使用）
+function loadCloudCfg(){ return {}; }
+function saveCloudCfg(cfg){}
+
+// ---- メタ（店舗マスタ・管理者）を保存/読込 ----
+async function cloudSaveMeta(){
+  if(!cloudReady()) throw new Error("Firebaseが未設定です");
+  const { db, doc, setDoc } = window.FB;
+  await setDoc(doc(db, "meta", "config"), { stores, adminAcct });
+}
+async function cloudLoadMeta(){
+  if(!cloudReady()) throw new Error("Firebaseが未設定です");
+  const { db, doc, getDoc } = window.FB;
+  const snap = await getDoc(doc(db, "meta", "config"));
+  if(!snap.exists()) return false;
+  const data = snap.data();
+  if(Array.isArray(data.stores)) stores = data.stores;
+  if(data.adminAcct) adminAcct = data.adminAcct;
+  return true;
+}
+
+// ---- 店舗単位のデータを保存/読込 ----
+async function cloudSaveStore(storeId){
+  if(!storeId || !cloudReady()) return;
+  if(storeId===currentStore) saveCurrentStoreData();
+  const { db, doc, setDoc, collection, getDocs, deleteDoc } = window.FB;
+  const ps = allPatients.filter(p=>p.store===storeId);
+  const fs = allFacilities.filter(f=>f.store===storeId);
+  // 患者：既存を消してから書き直す（全置換）
+  const pcol = collection(db, "stores", storeId, "patients");
+  const existing = await getDocs(pcol);
+  await Promise.all(existing.docs.map(d=>deleteDoc(d.ref)));
+  await Promise.all(ps.map((p,i)=> setDoc(doc(db, "stores", storeId, "patients", "p"+i), p) ));
+  // 施設：1ドキュメントにまとめて保存
+  await setDoc(doc(db, "stores", storeId, "facilities", "_all"), { list: fs });
+}
+async function cloudLoadStore(storeId){
+  if(!storeId || !cloudReady()) return false;
+  const { db, doc, getDoc, collection, getDocs } = window.FB;
+  // 患者
+  const pcol = collection(db, "stores", storeId, "patients");
+  const psnap = await getDocs(pcol);
+  const ps = psnap.docs.map(d=>d.data()).filter(p=>p && p.name);
+  // 施設
+  let fs = [];
+  const fsnap = await getDoc(doc(db, "stores", storeId, "facilities", "_all"));
+  if(fsnap.exists() && Array.isArray(fsnap.data().list)) fs = fsnap.data().list;
+  if(!ps.length && !fs.length) return false;
+  allPatients = allPatients.filter(p=>p.store!==storeId).concat(ps.map(p=>({...p, store:storeId})));
+  allFacilities = allFacilities.filter(f=>f.store!==storeId).concat(fs.map(f=>({...f, store:storeId})));
+  return true;
+}
+
+
+function saveCurrentStoreData(){
+  if(!currentStore) return;
+  // 現在表示中のpatients/facilitiesを、該当店舗分としてall配列へ反映
+  allPatients = allPatients.filter(p=>p.store!==currentStore).concat(patients.map(p=>({...p, store:currentStore})));
+  allFacilities = allFacilities.filter(f=>f.store!==currentStore).concat(facilities.map(f=>({...f, store:currentStore})));
+}
+function loadStoreData(storeId){
+  currentStore = storeId;
+  // patients/facilities を該当店舗分に差し替え（既存render関数はこれを参照）
+  const ps = allPatients.filter(p=>p.store===storeId);
+  patients.length=0; ps.forEach(p=>patients.push(p));
+  const fs = allFacilities.filter(f=>f.store===storeId);
+  facilities.length=0; fs.forEach(f=>facilities.push(f));
+  visitIdx=0; editIdx=0;
+}
+
+async function doLogin(){
+  const email=document.getElementById("login-id").value.trim();
+  const pw=document.getElementById("login-pw").value;
+  const errEl=document.getElementById("login-err");
+  errEl.textContent="";
+  if(!cloudReady()){ errEl.textContent="Firebaseが設定されていません（管理者に連絡）"; return; }
+  if(!email || !pw){ errEl.textContent="メールアドレスとパスワードを入力してください"; return; }
+  errEl.textContent="ログイン中…";
+  try{
+    const { auth, signInWithEmailAndPassword } = window.FB;
+    await signInWithEmailAndPassword(auth, email, pw);
+    // 成功後の処理は onAuthStateChanged が拾って実行する
+    document.getElementById("login-pw").value="";
+  }catch(e){
+    const code=(e && e.code)||"";
+    if(code.includes("invalid-credential")||code.includes("wrong-password")||code.includes("user-not-found")){
+      errEl.textContent="メールアドレスまたはパスワードが違います";
+    }else if(code.includes("too-many-requests")){
+      errEl.textContent="試行回数が多すぎます。しばらく待って再度お試しください";
+    }else{
+      errEl.textContent="ログインに失敗しました: "+code;
+    }
+  }
+}
+
+// Firebaseのログイン状態を監視し、ログイン/ログアウトを反映
+function initAuthWatcher(){
+  if(!cloudReady()) return;
+  const { auth, onAuthStateChanged, db, doc, getDoc } = window.FB;
+  onAuthStateChanged(auth, async (user)=>{
+    if(user){
+      // ログイン済み：Firestoreから役割を取得
+      try{
+        const snap = await getDoc(doc(db, "users", user.uid));
+        if(!snap.exists()){
+          document.getElementById("login-err").textContent="このアカウントの役割が未設定です（管理者に連絡）";
+          await window.FB.signOut(auth);
+          return;
+        }
+        const u = snap.data(); // { role, store, name }
+        currentUser = { role:u.role, name:u.name||user.email, store:u.store||null, uid:user.uid };
+        document.getElementById("loginScreen").style.display="none";
+        // 最新のメタ（店舗一覧）を読んでから遷移
+        try{ await cloudLoadMeta(); }catch(_){}
+        if(currentUser.role==="admin"){ enterAdminHome(); }
+        else { enterStore(currentUser.store); }
+      }catch(e){
+        document.getElementById("login-err").textContent="ユーザー情報の取得に失敗: "+((e&&e.code)||e);
+      }
+    }else{
+      // 未ログイン：ログイン画面を表示
+      currentUser=null; currentStore=null;
+      document.getElementById("loginScreen").style.display="flex";
+    }
+  });
+}
+
+// ===== セッション保持はFirebaseが自動で行う（下記は互換用の空実装）=====
+function saveSession(){}
+function loadSession(){ return null; }
+function clearSession(){}
+function tryRestoreSession(){ return false; } // onAuthStateChangedが復元を担う
+function saveTrustedDevice(){}
+function getTrustedDevice(){ return null; }
+function clearTrustedDevice(){}
+function tryTrustedAutoLogin(){ return false; }
+// 管理者ホーム：店舗を選ばず店舗マスタ画面を開く
+async function enterAdminHome(){
+  currentStore=null;
+  document.getElementById("storeScreen").style.display="none";
+  // 業務タブは隠し、店舗マスタのみ表示
+  renderHdrUser();
+  applyAdminMode(true);
+  // 店舗マスタタブをアクティブに
+  document.querySelectorAll("nav.tabs button").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll("main .view").forEach(v=>v.classList.remove("active"));
+  document.getElementById("adminTab").classList.add("active");
+  document.getElementById("view-admin").classList.add("active");
+  renderAdmin();
+  // クラウドが設定済みなら、全店舗の最新データを読み込んで集計を正しくする
+  if(typeof cloudReady==="function" && cloudReady()){
+    setCloudStatus("⬇ 全店舗の最新データを取得中…");
+    try{
+      await cloudLoadMeta();
+      for(const s of stores){ try{ await cloudLoadStore(s.id); }catch(_){}}
+      renderAdmin();
+      setCloudStatus("✅ 最新に更新しました");
+    }catch(e){ setCloudStatus("⚠ 取得に失敗: "+e.message); }
+  }
+}
+// 管理者モード（業務タブの表示/非表示を切替）
+function applyAdminMode(adminHome){
+  const adminTab=document.getElementById("adminTab");
+  adminTab.style.display = currentUser.role==="admin" ? "" : "none";
+  // 業務タブ（admin以外）の表示制御：管理者ホーム時は隠す
+  document.querySelectorAll("nav.tabs button").forEach(b=>{
+    if(b.dataset.view!=="admin"){ b.style.display = adminHome ? "none" : ""; }
+  });
+}
+async function logout(){
+  // 未保存の変更を保存してからサインアウト
+  try{ if(currentStore) await cloudSaveStore(currentStore); }catch(e){}
+  currentStore=null;
+  document.getElementById("storeScreen").style.display="none";
+  document.getElementById("login-id").value="";
+  document.getElementById("login-pw").value="";
+  if(cloudReady()){
+    try{ await window.FB.signOut(window.FB.auth); }catch(e){}
+    // onAuthStateChangedがログイン画面を表示する
+  }else{
+    currentUser=null;
+    document.getElementById("loginScreen").style.display="flex";
+  }
+}
+function showStoreSelect(){
+  // 管理者は全店舗、一般は担当店舗のみ
+  const list = currentUser.role==="admin" ? stores : stores.filter(s=>s.id===currentUser.store);
+  const grid=document.getElementById("storeGrid");
+  document.getElementById("store-sub").textContent = currentUser.role==="admin" ? "管理者：全店舗にアクセスできます" : currentUser.name+" さんの担当店舗";
+  if(list.length===0){ grid.innerHTML='<div style="font-size:13px;color:var(--ink-soft);padding:10px;">担当店舗が未設定です。管理者に店舗の割り当てを依頼してください。</div>'; }
+  else grid.innerHTML = list.map(s=>{
+    const cnt=allPatients.filter(p=>p.store===s.id).length;
+    return `<div class="store-pick" onclick="enterStore('${s.id}')"><div><div class="snm">${s.name}</div><div class="scnt">患者 ${cnt}名</div></div><div class="sarrow">→</div></div>`;
+  }).join("");
+  document.getElementById("storeScreen").style.display="flex";
+}
+async function enterStore(storeId){
+  loadStoreData(storeId);
+  // 報告書の薬局名を、ログイン店舗名から自動設定（未設定時のみ）
+  try{
+    const st=stores.find(s=>s.id===storeId);
+    if(st && st.name && !reportSign.pharmacy){ reportSign.pharmacy=st.name; }
+  }catch(e){}
+  document.getElementById("storeScreen").style.display="none";
+  // ヘッダー・タブ・初期描画（業務タブを表示）
+  renderHdrUser();
+  applyAdminMode(false);
+  // 患者一覧タブをアクティブに
+  document.querySelectorAll("nav.tabs button").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll("main .view").forEach(v=>v.classList.remove("active"));
+  const lb=document.querySelector('nav.tabs button[data-view="list"]'); if(lb) lb.classList.add("active");
+  document.getElementById("view-list").classList.add("active");
+  initApp();
+  // クラウドが設定済みなら、この店舗の最新データを自動読込
+  if(cloudReady()){
+    setCloudStatus("⬇ 最新データを取得中…");
+    try{
+      const ok = await cloudLoadStore(storeId);
+      loadStoreData(storeId); initApp();
+      setCloudStatus(ok ? "✅ 最新を読み込みました" : "（クラウドにこの店舗のデータはまだありません）");
+    }catch(e){
+      setCloudStatus("⚠ 自動読込に失敗: "+e.message);
+    }
+  }
+}
+// ヘッダーに同期状態を小さく表示
+function setCloudStatus(msg){
+  const el=document.getElementById("cloudStatus");
+  if(el){ el.textContent=msg; clearTimeout(el._t); el._t=setTimeout(()=>{ el.textContent=""; },5000); }
+}
+// 変更時の自動保存（デバウンス：連続変更をまとめて数秒後に1回保存）
+let _cloudSaveTimer=null;
+function scheduleCloudSave(){
+  if(!cloudReady() || !currentStore) return;
+  clearTimeout(_cloudSaveTimer);
+  setCloudStatus("… 変更を保存予定");
+  _cloudSaveTimer=setTimeout(async()=>{
+    try{
+      setCloudStatus("⬆ 保存中…");
+      await cloudSaveStore(currentStore);
+      setCloudStatus("✅ 保存しました "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
+    }catch(e){
+      setCloudStatus("⚠ 保存失敗: "+e.message);
+    }
+  }, 2500);
+}
+// メタ（店舗マスタ・薬剤師など）の自動保存
+let _metaSaveTimer=null;
+function scheduleMetaSave(){
+  if(!cloudReady()) return;
+  clearTimeout(_metaSaveTimer);
+  setCloudStatus("… 設定を保存予定");
+  _metaSaveTimer=setTimeout(async()=>{
+    try{
+      setCloudStatus("⬆ 設定を保存中…");
+      await cloudSaveMeta();
+      setCloudStatus("✅ 設定を保存しました");
+    }catch(e){
+      setCloudStatus("⚠ 設定保存失敗: "+e.message);
+    }
+  }, 2000);
+}
+function renderHdrUser(){
+  const st=stores.find(s=>s.id===currentStore);
+  let html="";
+  if(currentStore && st){ html += `<span class="chip">${icon("shop")}${st.name}</span>`; }
+  else if(currentUser.role==="admin"){ html += `<span class="chip">${icon("shop")}店舗マスタ管理</span>`; }
+  if(currentUser.role==="admin"){ html += `<span class="chip">管理者</span>`; }
+  if(currentUser.role==="admin" && currentStore){ html += `<button id="adminHomeBtn">管理に戻る</button>`; }
+  html += `<button id="logoutBtn">ログアウト</button>`;
+  document.getElementById("hdrUser").innerHTML = html;
+  const ab=document.getElementById("adminHomeBtn"); if(ab) ab.onclick=()=>{ saveCurrentStoreData(); enterAdminHome(); };
+  document.getElementById("logoutBtn").onclick=logout;
+}
+
+// ===== 店舗マスタ描画 =====
+function renderAdmin(){
+  // 店舗一覧（店舗名＋ログインID/PWを編集、店舗ごとにアカウント付与）
+  document.getElementById("storeList").innerHTML = stores.map(s=>{
+    const cnt=allPatients.filter(p=>p.store===s.id).length;
+    return `<div class="admin-row" style="flex-wrap:wrap"><div class="info" style="flex:1 1 100%">`+
+      `<input type="text" value="${(s.name||'').replace(/"/g,'&quot;')}" onchange="renameStore('${s.id}',this.value)" style="width:100%;max-width:340px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-weight:700;" placeholder="店舗名">`+
+      `<div class="meta" style="margin-top:6px">患者 ${cnt}名</div></div>`+
+      `<div style="display:flex;gap:8px;flex-wrap:wrap;flex:1 1 100%;margin-top:6px">`+
+        `<div><label style="font-size:11px;color:var(--ink-soft)">ログインID</label><br><input type="text" value="${(s.loginId||'').replace(/"/g,'&quot;')}" onchange="setStoreLogin('${s.id}','loginId',this.value)" style="padding:6px 9px;border:1px solid var(--line);border-radius:7px;font-size:13px;" placeholder="例 honten"></div>`+
+        `<div><label style="font-size:11px;color:var(--ink-soft)">パスワード</label><br><input type="text" value="${(s.loginPw||'').replace(/"/g,'&quot;')}" onchange="setStoreLogin('${s.id}','loginPw',this.value)" style="padding:6px 9px;border:1px solid var(--line);border-radius:7px;font-size:13px;" placeholder="パスワード"></div>`+
+        `<div style="display:flex;gap:6px;align-items:flex-end;margin-left:auto">`+
+          `<button class="addbtn" style="padding:6px 12px;font-size:12px" onclick="enterStore('${s.id}')">業務画面を開く →</button>`+
+          (stores.length>1?`<button class="delbtn" onclick="delStore('${s.id}')">削除</button>`:'<span style="font-size:11px;color:var(--ink-soft)">削除不可</span>')+
+        `</div>`+
+      `</div></div>`;
+  }).join("");
+  // 管理者アカウント設定
+  const al=document.getElementById("acctList");
+  if(al) al.innerHTML =
+    `<div class="admin-form">`+
+    `<div><label>管理者ID</label><input type="text" id="admId" value="${(adminAcct.id||'').replace(/"/g,'&quot;')}"></div>`+
+    `<div><label>管理者パスワード</label><input type="text" id="admPw" value="${(adminAcct.pw||'').replace(/"/g,'&quot;')}"></div>`+
+    `<div><button class="addbtn" onclick="saveAdminAcct()">管理者情報を更新</button></div>`+
+    `</div>`;
+  renderStats();
+  bindCloudConfigUI();
+}
+// データ同期ステータス表示（店舗マスタ内）
+function bindCloudConfigUI(){
+  const el=document.getElementById("fb-status");
+  if(!el) return;
+  if(cloudReady()){
+    el.textContent="✅ Firebaseに接続済み。データはリアルタイムで同期されています。";
+    el.style.color="#2a8a2a";
+  }else{
+    el.textContent="⚠ Firebase未設定です。index.html の firebaseConfig を設定してください。";
+    el.style.color="#c00";
+  }
+}
+function setStoreLogin(id, key, val){
+  const s=stores.find(x=>x.id===id); if(!s) return;
+  s[key]=(val||"").trim();
+  scheduleMetaSave();
+}
+
+// ===== 店舗別集計 =====
+function buildMonthOptions(){
+  const set=new Set();
+  const now=new Date();
+  set.add(now.getFullYear()+"/"+String(now.getMonth()+1).padStart(2,"0"));
+  allPatients.forEach(p=>(p.records||[]).forEach(r=>{
+    const m=(r.date||"").match(/^(\d{4})\/(\d{1,2})/);
+    if(m) set.add(m[1]+"/"+String(+m[2]).padStart(2,"0"));
+  }));
+  return [...set].sort().reverse();
+}
+function renderStats(){
+  const sel=document.getElementById("statMonth"); if(!sel) return;
+  if(!sel.options.length){
+    const months=buildMonthOptions();
+    sel.innerHTML=months.map(m=>`<option value="${m}">${m.replace("/","年")}月</option>`).join("");
+    sel.onchange=renderStats;
+  }
+  const ym=sel.value || (sel.options[0]&&sel.options[0].value);
+  const parts=ym? ym.split("/").map(Number) : [0,0];
+  const yy=parts[0], mm=parts[1];
+  const rows = stores.map(s=>{
+    const ps=allPatients.filter(p=>p.store===s.id);
+    const visits = ps.reduce((acc,p)=>acc + (p.records||[]).filter(r=>{
+      const m=(r.date||"").match(/^(\d{4})\/(\d{1,2})/);
+      return m && +m[1]===yy && +m[2]===mm;
+    }).length, 0);
+    const active = ps.filter(p=>(p.status||"対応中")==="対応中").length;
+    const hosp = ps.filter(p=>p.status==="入院中").length;
+    const facCnt = allFacilities.filter(f=>f.store===s.id).length;
+    return { name:s.name, patients:ps.length, active, hosp, visits, facCnt };
+  });
+  const tot = rows.reduce((a,r)=>({patients:a.patients+r.patients, active:a.active+r.active, hosp:a.hosp+r.hosp, visits:a.visits+r.visits, facCnt:a.facCnt+r.facCnt}), {patients:0,active:0,hosp:0,visits:0,facCnt:0});
+  const th='padding:9px 12px;text-align:left;font-size:12px;color:var(--ink-soft);border-bottom:2px solid var(--line);white-space:nowrap;';
+  const td='padding:9px 12px;font-size:14px;border-bottom:1px solid var(--line);';
+  const tdn=td+'font-weight:700;text-align:right;';
+  document.getElementById("statTable").innerHTML =
+    `<table style="width:100%;border-collapse:collapse;min-width:560px">`+
+    `<thead><tr>`+
+      `<th style="${th}">店舗</th>`+
+      `<th style="${th}text-align:right">患者数</th>`+
+      `<th style="${th}text-align:right">対応中</th>`+
+      `<th style="${th}text-align:right">入院中</th>`+
+      `<th style="${th}text-align:right">当月訪問回数</th>`+
+      `<th style="${th}text-align:right">施設数</th>`+
+    `</tr></thead><tbody>`+
+    rows.map(r=>`<tr>`+
+      `<td style="${td}font-weight:700">${r.name}</td>`+
+      `<td style="${tdn}">${r.patients}</td>`+
+      `<td style="${tdn}">${r.active}</td>`+
+      `<td style="${tdn}">${r.hosp}</td>`+
+      `<td style="${tdn}"><span style="background:var(--grad-primary);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">${r.visits}</span></td>`+
+      `<td style="${tdn}">${r.facCnt}</td>`+
+    `</tr>`).join("")+
+    `<tr style="background:rgba(37,183,192,.06)">`+
+      `<td style="${td}font-weight:800">合計</td>`+
+      `<td style="${tdn}">${tot.patients}</td>`+
+      `<td style="${tdn}">${tot.active}</td>`+
+      `<td style="${tdn}">${tot.hosp}</td>`+
+      `<td style="${tdn}">${tot.visits}</td>`+
+      `<td style="${tdn}">${tot.facCnt}</td>`+
+    `</tr>`+
+    `</tbody></table>`;
+}
+function saveAdminAcct(){
+  const id=(document.getElementById("admId").value||"").trim();
+  const pw=document.getElementById("admPw").value;
+  if(!id||!pw){ alert("管理者IDとパスワードを入力してください"); return; }
+  adminAcct.id=id; adminAcct.pw=pw;
+  scheduleMetaSave();
+  alert("管理者情報を更新しました");
+}
+function renameStore(id, name){
+  const s=stores.find(x=>x.id===id); if(!s) return;
+  const v=(name||"").trim(); if(!v) return;
+  s.name=v;
+  if(currentStore===id) renderHdrUser();
+  scheduleMetaSave();
+  renderAdmin();
+}
+function delStore(id){
+  if(allPatients.some(p=>p.store===id)){ if(!confirm("この店舗には患者データがあります。店舗を削除すると患者も削除されます。よろしいですか？")) return; }
+  stores=stores.filter(s=>s.id!==id);
+  allPatients=allPatients.filter(p=>p.store!==id);
+  allFacilities=allFacilities.filter(f=>f.store!==id);
+  scheduleMetaSave();
+  renderAdmin();
+}
+(function bindAdmin(){
+  document.getElementById("addStoreBtn").onclick=()=>{
+    const n=document.getElementById("newStoreName").value.trim();
+    if(!n){ alert("店舗名を入力してください"); return; }
+    const id="s"+Date.now().toString(36);
+    // ログインID初期値（重複回避）
+    let base="store"+(stores.length+1), lid=base, i=1;
+    while(stores.some(s=>s.loginId===lid)){ lid=base+"_"+(i++); }
+    stores.push({id, name:n, loginId:lid, loginPw:lid+"1234"});
+    document.getElementById("newStoreName").value="";
+    scheduleMetaSave();
+    renderAdmin();
+  };
+})();
+
+// ログインボタン・Enter
+document.getElementById("loginBtn").onclick=doLogin;
+document.getElementById("login-pw").addEventListener("keydown",e=>{ if(e.key==="Enter") doLogin(); });
+document.getElementById("logoutFromStore").onclick=logout;
+
+// ===== 手動更新ボタン：クラウドから最新データを取得して画面を再描画 =====
+async function manualRefresh(){
+  if(!cloudReady()){ setCloudStatus("クラウド未設定です"); return; }
+  const btn=document.getElementById("refreshBtn");
+  if(btn){ btn.disabled=true; btn.textContent="⟳ 取得中…"; }
+  setCloudStatus("⬇ 最新データを取得中…");
+  try{
+    await cloudLoadMeta();
+    if(currentStore){
+      // 店舗業務中：その店舗を読み直して全ビュー再描画
+      await cloudLoadStore(currentStore);
+      loadStoreData(currentStore);
+      initApp();
+    }else if(currentUser && currentUser.role==="admin"){
+      // 管理者ホーム：全店舗を読み直して集計を更新
+      for(const s of stores){ try{ await cloudLoadStore(s.id); }catch(_){}}
+      renderAdmin();
+    }
+    setCloudStatus("✅ 最新に更新しました "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
+  }catch(e){
+    setCloudStatus("⚠ 更新に失敗: "+e.message);
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent="⟳ 更新"; }
+  }
+}
+{ const rb=document.getElementById("refreshBtn"); if(rb) rb.onclick=manualRefresh; }
+
+// パスワード表示/非表示トグル
+(function(){
+  const btn=document.getElementById("pw-toggle"), pw=document.getElementById("login-pw");
+  if(btn&&pw){ btn.onclick=()=>{
+    const show = pw.type==="password";
+    pw.type = show ? "text" : "password";
+    btn.innerHTML = show ? icon("eyeoff") : icon("eye");
+    pw.focus();
+  }; }
+})();
+
+// 起動時：Firebaseの準備を待ってから認証監視を開始
+function startApp(){
+  if(window.FB && window.FB.ready){
+    initAuthWatcher(); // ログイン状態を監視（ログイン済みなら自動で画面遷移）
+  }else{
+    // Firebase未設定：ログイン画面にメッセージ
+    const err=document.getElementById("login-err");
+    if(err) err.textContent="Firebaseが設定されていません（管理者に連絡）";
+    document.getElementById("loginScreen").style.display="flex";
+  }
+}
+if(window.FB){ startApp(); }
+else { window.addEventListener("firebase-ready", startApp, { once:true }); }
+
+// ===== 薬剤師登録UIの配線 =====
+function renderPharmacistList(){
+  const wrap=document.getElementById("pharm-list"); if(!wrap) return;
+  const list=getPharmacists();
+  wrap.innerHTML = list.length ? list.map(n=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;">
+      <span style="font-weight:600;">${icon("user")}${String(n).replace(/</g,'&lt;')}</span>
+      <button class="pharm-del" data-n="${String(n).replace(/"/g,'&quot;')}" style="border:none;background:#e57373;color:#fff;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;">削除</button>
+    </div>`).join("") : `<p style="color:var(--ink-soft);font-size:13px;padding:6px;">まだ薬剤師が登録されていません。</p>`;
+  wrap.querySelectorAll(".pharm-del").forEach(b=>{
+    b.onclick=()=>{
+      if(!confirm(`「${b.dataset.n}」を削除しますか？`)) return;
+      removePharmacist(b.dataset.n); renderPharmacistList(); scheduleMetaSave();
+    };
+  });
+}
+(function(){
+  const inp=document.getElementById("pharm-input");
+  const add=document.getElementById("pharm-add");
+  const msg=document.getElementById("pharm-msg");
+  function doAdd(){
+    if(!inp) return;
+    const ok=addPharmacist(inp.value);
+    if(ok){ inp.value=""; if(msg){msg.textContent="✅ 登録しました";msg.style.color="#2a8a2a";} renderPharmacistList(); scheduleMetaSave(); }
+    else { if(msg){msg.textContent="⚠ 空欄、または既に登録済みです";msg.style.color="#c00";} }
+    setTimeout(()=>{ if(msg) msg.textContent=""; },3000);
+  }
+  if(add) add.onclick=doAdd;
+  if(inp) inp.addEventListener("keydown",e=>{ if(e.key==="Enter") doAdd(); });
+})();
+
+
+// 保存系の操作後に現在店舗データをall配列へ同期（タブ離脱時に保存）
+window.addEventListener("beforeunload", saveCurrentStoreData);
+</script>
+<script>
+// PWA: サービスワーカー登録（HTTPS環境でのみ動作。file://では無視される）
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch((e) => console.log("SW登録スキップ:", e));
+  });
+}
+</script>
+</body>
+</html>
