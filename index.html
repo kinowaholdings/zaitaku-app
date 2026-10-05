@@ -603,20 +603,16 @@
         <div><label>店舗名</label><input type="text" id="newStoreName" placeholder="例 きのわ薬局 本店"></div>
         <div><button class="addbtn" id="addStoreBtn">＋ 店舗を追加</button></div>
       </div>
-      <div style="font-size:11px;color:var(--ink-soft);margin-top:10px;">※ログインIDとパスワードは店舗ごとに付与されます。店舗のスタッフはこのID/PWでログインし、その店舗の業務画面に入ります。店舗追加時はID/PWが自動で仮設定されるので、必要に応じて変更してください。</div>
+      <div style="font-size:11px;color:var(--ink-soft);margin-top:10px;">※ 店舗を追加すると自動でID（s2, s3…）が割り振られます。スタッフのログインアカウント（メール／パスワード）と担当店舗の割り当ては、Firebaseコンソールで行います（下記「データ同期について」参照）。</div>
     </div>
     <div class="admin-sec">
-      <h3><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;"><circle cx="8" cy="12" r="4"/><path d="M12 12h9"/><path d="M17 12v4M20 12v3"/></svg> 管理者アカウント</h3>
-      <div id="acctList"></div>
-      <div style="font-size:11px;color:var(--ink-soft);margin-top:10px;">※管理者はこの店舗マスタ画面にログインし、全店舗を管理できます。</div>
-    </div>
-    <div class="admin-sec">
-      <h3><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;"><path d="M6 17a4 4 0 0 1 .5-8 5 5 0 0 1 9.5 1.5A3.5 3.5 0 0 1 18 17z"/></svg> データ同期について</h3>
+      <h3><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.15em;"><path d="M6 17a4 4 0 0 1 .5-8 5 5 0 0 1 9.5 1.5A3.5 3.5 0 0 1 18 17z"/></svg> データ同期・アカウント管理について</h3>
       <p style="font-size:12px;color:var(--ink-soft);line-height:1.6;margin:4px 0 8px;">
-        このアプリは <b>Firebase</b> にデータをリアルタイム保存します（編集すると即座に全端末へ反映）。設定はアプリ内（index.html）の firebaseConfig で行います。
+        このアプリは <b>Firebase</b> にデータを保存します。編集すると自動でクラウドに保存され、他の端末では次回ログイン時、または「⟳更新」ボタンで最新が反映されます。<br>
+        <b>ログインアカウント（メール／パスワード）・管理者/店舗の役割・担当店舗の割り当て</b>は、すべて Firebase コンソールで管理します。このアプリ内では設定しません。
       </p>
       <div id="fb-status" style="font-size:13px;min-height:18px;"></div>
-      <div style="font-size:11px;color:#c60;margin-top:8px;">※ アカウント（メール／パスワード）の追加・削除・役割設定は、Firebaseコンソールで行います。手順は配布資料「Firebase設定手順」を参照。</div>
+      <div style="font-size:11px;color:#c60;margin-top:8px;">※ アカウントの追加・削除・役割設定の手順は、配布資料「実装手順_決定版」STEP 4・6 を参照してください。</div>
     </div>
   </section>
 </main>
@@ -644,7 +640,7 @@
   </div>
 </div>
 
-<footer>在宅訪問薬剤管理システム｜データはFirebaseでリアルタイム同期。</footer>
+<footer>在宅訪問薬剤管理システム｜データはFirebaseに保存（自動保存・更新ボタンで同期）。</footer>
 
 <!-- ▼▼▼ Firebase 設定（管理者がここに firebaseConfig を貼る）▼▼▼ -->
 <script type="module">
@@ -656,13 +652,13 @@
 
   // ★★★ ここに Firebase コンソールで取得した firebaseConfig を貼り付ける ★★★
   const firebaseConfig = {
-    apiKey: "AIzaSyCrrNJXWyDrFtMKAD9TRIMT91dwkkxKCgo",
-  authDomain: "kinowa-zaitaku.firebaseapp.com",
-  projectId: "kinowa-zaitaku",
-  storageBucket: "kinowa-zaitaku.firebasestorage.app",
-  messagingSenderId: "435615268053",
-  appId: "1:435615268053:web:a61f2cc878f37b1ed6765c"
-};
+    apiKey: "PASTE_API_KEY",
+    authDomain: "PASTE.firebaseapp.com",
+    projectId: "PASTE_PROJECT_ID",
+    storageBucket: "PASTE.appspot.com",
+    messagingSenderId: "PASTE_SENDER_ID",
+    appId: "PASTE_APP_ID"
+  };
   // ★★★ 貼り付けはここまで ★★★
 
   try {
@@ -2247,7 +2243,7 @@ function initApp(){
 
 // ===== 認証・店舗管理 =====
 // 全患者・全施設を退避し、storeフィールドを付与（未設定は最初の店舗）
-let stores = [{id:"s1", name:"きのわ薬局 本店", loginId:"honten", loginPw:"honten1234"}];
+let stores = [{id:"s1", name:"くりの木薬局"}];
 
 // 現在ログイン中の店舗の薬剤師リストを取得/保存（store.pharmacists に保持＝同期対象）
 function getCurrentStoreObj(){
@@ -2271,7 +2267,6 @@ function removePharmacist(name){
   const st=getCurrentStoreObj(); if(!st||!Array.isArray(st.pharmacists)) return;
   const i=st.pharmacists.indexOf(name); if(i>=0) st.pharmacists.splice(i,1);
 }
-let adminAcct = { id:"admin", pw:"admin1234" };
 let allPatients = patients.map(p=> (p.store?p:{...p, store:"s1"}) );
 let allFacilities = facilities.map(f=> (f.store?f:{...f, store:"s1"}) );
 let currentUser = null;
@@ -2283,9 +2278,10 @@ let currentStore = null;
 //   データを Firebase Firestore にリアルタイム保存/読込する
 // ===================================================================
 // Firestore 構造:
-//   meta/config                     … { stores, adminAcct }
+//   meta/config                     … { stores:[{id,name,pharmacists}] }（店舗マスタ）
+//   users/{uid}                     … { role, store, name }（認証ユーザーの役割）
 //   stores/{storeId}/patients/{id}  … 患者1件ずつ
-//   stores/{storeId}/facilities/{id}… 施設1件ずつ
+//   stores/{storeId}/facilities/_all… 施設をまとめて1ドキュメント
 
 // Firebaseが設定済み・接続済みか
 function cloudReady(){
@@ -2299,7 +2295,9 @@ function saveCloudCfg(cfg){}
 async function cloudSaveMeta(){
   if(!cloudReady()) throw new Error("Firebaseが未設定です");
   const { db, doc, setDoc } = window.FB;
-  await setDoc(doc(db, "meta", "config"), { stores, adminAcct });
+  // 店舗マスタは id・name・pharmacists（薬剤師）を保存。ログイン認証はFirebase Authが担当
+  const storeList = stores.map(s=>({ id:s.id, name:s.name, pharmacists:Array.isArray(s.pharmacists)?s.pharmacists:[] }));
+  await setDoc(doc(db, "meta", "config"), { stores: storeList });
 }
 async function cloudLoadMeta(){
   if(!cloudReady()) throw new Error("Firebaseが未設定です");
@@ -2307,33 +2305,47 @@ async function cloudLoadMeta(){
   const snap = await getDoc(doc(db, "meta", "config"));
   if(!snap.exists()) return false;
   const data = snap.data();
-  if(Array.isArray(data.stores)) stores = data.stores;
-  if(data.adminAcct) adminAcct = data.adminAcct;
+  if(Array.isArray(data.stores)) stores = data.stores.map(s=>({ id:s.id, name:s.name, pharmacists:Array.isArray(s.pharmacists)?s.pharmacists:[] }));
   return true;
 }
 
 // ---- 店舗単位のデータを保存/読込 ----
+// 患者に安定ID(pid)を保証する
+function ensurePid(p){
+  if(!p.pid){ p.pid = "p_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2,8); }
+  return p.pid;
+}
 async function cloudSaveStore(storeId){
   if(!storeId || !cloudReady()) return;
   if(storeId===currentStore) saveCurrentStoreData();
   const { db, doc, setDoc, collection, getDocs, deleteDoc } = window.FB;
-  const ps = allPatients.filter(p=>p.store===storeId);
-  const fs = allFacilities.filter(f=>f.store===storeId);
-  // 患者：既存を消してから書き直す（全置換）
+  const ps = allPatients.filter(p=>p.store===storeId && p.name && p.name.trim() && p.name!=="新規患者");
+  ps.forEach(ensurePid);
   const pcol = collection(db, "stores", storeId, "patients");
   const existing = await getDocs(pcol);
-  await Promise.all(existing.docs.map(d=>deleteDoc(d.ref)));
-  await Promise.all(ps.map((p,i)=> setDoc(doc(db, "stores", storeId, "patients", "p"+i), p) ));
+  // 安全装置：メモリ上の患者が0件なのにクラウドには患者がいる場合、
+  // 読込失敗などの異常の可能性が高いので「全削除」はせず、保存自体を中止する
+  if(ps.length===0 && existing.size>0){
+    setCloudStatus("⚠ 患者0件のため保存を中止（データ保護）");
+    return;
+  }
+  // クラウド上に存在するが、今の一覧に無い患者＝削除された患者 → その分だけ削除
+  const currentPids = new Set(ps.map(p=>p.pid));
+  const toDelete = existing.docs.filter(d=>!currentPids.has(d.id));
+  await Promise.all(toDelete.map(d=>deleteDoc(d.ref)));
+  // 各患者を保存（pidをドキュメントIDに）
+  await Promise.all(ps.map(p=> setDoc(doc(db, "stores", storeId, "patients", p.pid), p) ));
   // 施設：1ドキュメントにまとめて保存
+  const fs = allFacilities.filter(f=>f.store===storeId);
   await setDoc(doc(db, "stores", storeId, "facilities", "_all"), { list: fs });
 }
 async function cloudLoadStore(storeId){
   if(!storeId || !cloudReady()) return false;
   const { db, doc, getDoc, collection, getDocs } = window.FB;
-  // 患者
+  // 患者（ドキュメントIDをpidとして復元）
   const pcol = collection(db, "stores", storeId, "patients");
   const psnap = await getDocs(pcol);
-  const ps = psnap.docs.map(d=>d.data()).filter(p=>p && p.name);
+  const ps = psnap.docs.map(d=>({ pid:d.id, ...d.data() })).filter(p=>p && p.name);
   // 施設
   let fs = [];
   const fsnap = await getDoc(doc(db, "stores", storeId, "facilities", "_all"));
@@ -2488,6 +2500,12 @@ function showStoreSelect(){
   document.getElementById("storeScreen").style.display="flex";
 }
 async function enterStore(storeId){
+  if(!storeId){ setCloudStatus("担当店舗が未設定です（Firebaseで store を設定してください）"); return; }
+  // 店舗マスタ(meta)にこのIDが無い場合（Firebaseコンソールで担当店舗を先に設定した等）、
+  // 仮の店舗として登録しておく（店舗名は後で店舗マスタで設定できる）
+  if(!stores.find(s=>s.id===storeId)){
+    stores.push({ id:storeId, name:storeId, pharmacists:[] });
+  }
   loadStoreData(storeId);
   // 報告書の薬局名を、ログイン店舗名から自動設定（未設定時のみ）
   try{
@@ -2568,29 +2586,19 @@ function renderHdrUser(){
 
 // ===== 店舗マスタ描画 =====
 function renderAdmin(){
-  // 店舗一覧（店舗名＋ログインID/PWを編集、店舗ごとにアカウント付与）
+  // 店舗一覧（店舗名の編集のみ。ログイン認証はFirebaseが担当）
   document.getElementById("storeList").innerHTML = stores.map(s=>{
     const cnt=allPatients.filter(p=>p.store===s.id).length;
     return `<div class="admin-row" style="flex-wrap:wrap"><div class="info" style="flex:1 1 100%">`+
       `<input type="text" value="${(s.name||'').replace(/"/g,'&quot;')}" onchange="renameStore('${s.id}',this.value)" style="width:100%;max-width:340px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-weight:700;" placeholder="店舗名">`+
-      `<div class="meta" style="margin-top:6px">患者 ${cnt}名</div></div>`+
-      `<div style="display:flex;gap:8px;flex-wrap:wrap;flex:1 1 100%;margin-top:6px">`+
-        `<div><label style="font-size:11px;color:var(--ink-soft)">ログインID</label><br><input type="text" value="${(s.loginId||'').replace(/"/g,'&quot;')}" onchange="setStoreLogin('${s.id}','loginId',this.value)" style="padding:6px 9px;border:1px solid var(--line);border-radius:7px;font-size:13px;" placeholder="例 honten"></div>`+
-        `<div><label style="font-size:11px;color:var(--ink-soft)">パスワード</label><br><input type="text" value="${(s.loginPw||'').replace(/"/g,'&quot;')}" onchange="setStoreLogin('${s.id}','loginPw',this.value)" style="padding:6px 9px;border:1px solid var(--line);border-radius:7px;font-size:13px;" placeholder="パスワード"></div>`+
-        `<div style="display:flex;gap:6px;align-items:flex-end;margin-left:auto">`+
+      `<div class="meta" style="margin-top:6px">店舗ID: <code>${s.id}</code> ／ 患者 ${cnt}名</div></div>`+
+      `<div style="display:flex;gap:8px;flex-wrap:wrap;flex:1 1 100%;margin-top:8px">`+
+        `<div style="display:flex;gap:6px;align-items:center;margin-left:auto">`+
           `<button class="addbtn" style="padding:6px 12px;font-size:12px" onclick="enterStore('${s.id}')">業務画面を開く →</button>`+
           (stores.length>1?`<button class="delbtn" onclick="delStore('${s.id}')">削除</button>`:'<span style="font-size:11px;color:var(--ink-soft)">削除不可</span>')+
         `</div>`+
       `</div></div>`;
   }).join("");
-  // 管理者アカウント設定
-  const al=document.getElementById("acctList");
-  if(al) al.innerHTML =
-    `<div class="admin-form">`+
-    `<div><label>管理者ID</label><input type="text" id="admId" value="${(adminAcct.id||'').replace(/"/g,'&quot;')}"></div>`+
-    `<div><label>管理者パスワード</label><input type="text" id="admPw" value="${(adminAcct.pw||'').replace(/"/g,'&quot;')}"></div>`+
-    `<div><button class="addbtn" onclick="saveAdminAcct()">管理者情報を更新</button></div>`+
-    `</div>`;
   renderStats();
   bindCloudConfigUI();
 }
@@ -2599,17 +2607,12 @@ function bindCloudConfigUI(){
   const el=document.getElementById("fb-status");
   if(!el) return;
   if(cloudReady()){
-    el.textContent="✅ Firebaseに接続済み。データはリアルタイムで同期されています。";
+    el.textContent="✅ Firebaseに接続済み。編集は自動保存され、更新ボタンで最新を取得できます。";
     el.style.color="#2a8a2a";
   }else{
     el.textContent="⚠ Firebase未設定です。index.html の firebaseConfig を設定してください。";
     el.style.color="#c00";
   }
-}
-function setStoreLogin(id, key, val){
-  const s=stores.find(x=>x.id===id); if(!s) return;
-  s[key]=(val||"").trim();
-  scheduleMetaSave();
 }
 
 // ===== 店舗別集計 =====
@@ -2676,14 +2679,6 @@ function renderStats(){
     `</tr>`+
     `</tbody></table>`;
 }
-function saveAdminAcct(){
-  const id=(document.getElementById("admId").value||"").trim();
-  const pw=document.getElementById("admPw").value;
-  if(!id||!pw){ alert("管理者IDとパスワードを入力してください"); return; }
-  adminAcct.id=id; adminAcct.pw=pw;
-  scheduleMetaSave();
-  alert("管理者情報を更新しました");
-}
 function renameStore(id, name){
   const s=stores.find(x=>x.id===id); if(!s) return;
   const v=(name||"").trim(); if(!v) return;
@@ -2704,14 +2699,14 @@ function delStore(id){
   document.getElementById("addStoreBtn").onclick=()=>{
     const n=document.getElementById("newStoreName").value.trim();
     if(!n){ alert("店舗名を入力してください"); return; }
-    const id="s"+Date.now().toString(36);
-    // ログインID初期値（重複回避）
-    let base="store"+(stores.length+1), lid=base, i=1;
-    while(stores.some(s=>s.loginId===lid)){ lid=base+"_"+(i++); }
-    stores.push({id, name:n, loginId:lid, loginPw:lid+"1234"});
+    // 店舗IDは s2, s3… の連番（既存と重複しない番号）
+    let num=2; while(stores.some(s=>s.id==="s"+num)){ num++; }
+    const id="s"+num;
+    stores.push({id, name:n, pharmacists:[]});
     document.getElementById("newStoreName").value="";
     scheduleMetaSave();
     renderAdmin();
+    alert("店舗「"+n+"」を追加しました（店舗ID: "+id+"）。\nこの店舗のスタッフを追加するには、Firebaseコンソールでアカウントを作り、役割 store・担当店舗 "+id+" を設定してください。");
   };
 })();
 
@@ -2804,8 +2799,18 @@ function renderPharmacistList(){
 })();
 
 
-// 保存系の操作後に現在店舗データをall配列へ同期（タブ離脱時に保存）
+// 保存系：タブ離脱・バックグラウンド化のたびに、現在店舗データをメモリ反映＋クラウド保存を試みる
 window.addEventListener("beforeunload", saveCurrentStoreData);
+// visibilitychange はモバイルのホーム戻り等でも発火し、beforeunloadより信頼性が高い
+document.addEventListener("visibilitychange", ()=>{
+  if(document.visibilityState==="hidden"){
+    saveCurrentStoreData();
+    // 保存予定のタイマーが残っていれば即実行（離脱で失われないように）
+    if(cloudReady() && currentStore){
+      try{ cloudSaveStore(currentStore); }catch(e){}
+    }
+  }
+});
 </script>
 <script>
 // PWA: サービスワーカー登録（HTTPS環境でのみ動作。file://では無視される）
